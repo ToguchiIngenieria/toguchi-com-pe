@@ -26,6 +26,8 @@ npm run dev
 
 Deploy automático a Cloudflare Workers en cada push a `main`.
 
+> Auto-deploy activo desde Cloudflare Workers (GitHub integration, 2026-07-31). Primer deploy manual verificado: Version ID `8a303594-c527-4db8-9f36-55c7661b58ce`.
+
 ## Licencia
 
 Privado — TOGUCHI INGENIERÍA Y SERVICIOS S.A.C. Todos los derechos reservados.
