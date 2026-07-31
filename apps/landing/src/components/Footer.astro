@@ -1,0 +1,18 @@
+---
+import logo from "../assets/toguchi-logo.svg";
+const year = new Date().getFullYear();
+---
+
+<footer id="contacto" class="border-t border-white/10 bg-darker">
+	<div class="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-center md:justify-between">
+		<div class="flex flex-col gap-3">
+			<img src={logo.src} alt="" class="h-7 w-auto self-start" width="1920" height="448" />
+			<p class="text-sm text-silver">TOGUCHI INGENIERÍA Y SERVICIOS S.A.C. · RUC 20616012798</p>
+		</div>
+		<div class="flex flex-col gap-1 text-sm text-silver md:text-right">
+			<a href="https://wa.me/51936013255" target="_blank" rel="noopener" class="font-medium text-primary hover:underline">WhatsApp +51 936 013 255</a>
+			<p>Lima, Perú</p>
+			<p class="text-silver/60">© {year} Todos los derechos reservados</p>
+		</div>
+	</div>
+</footer>

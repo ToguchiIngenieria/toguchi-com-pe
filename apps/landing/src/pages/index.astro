@@ -2,7 +2,34 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout title="TOGUCHI INGENIERÍA Y SERVICIOS">
-	<h1 class="text-3xl font-bold text-cyan-500">Landing en construcción</h1>
-	<p class="text-gray-700">TOGUCHI INGENIERÍA Y SERVICIOS S.A.C.</p>
+<BaseLayout title="TOGUCHI Ingeniería & Servicios | Mecatrónica y automatización en Lima">
+	<section class="relative overflow-hidden">
+		<svg
+			class="pointer-events-none absolute -right-24 top-1/2 h-[560px] w-[560px] -translate-y-1/2 text-primary/10"
+			viewBox="0 0 400 400"
+			fill="none"
+			aria-hidden="true"
+		>
+			<polygon points="200,20 320,90 320,230 200,300 80,230 80,90" stroke="currentColor" stroke-width="2" />
+			<polygon points="200,60 285,110 285,210 200,260 115,210 115,110" stroke="currentColor" stroke-width="1.5" />
+			<polygon points="330,240 385,272 385,336 330,368 275,336 275,272" stroke="currentColor" stroke-width="1.5" />
+		</svg>
+		<div class="mx-auto flex min-h-svh max-w-6xl flex-col justify-center px-4 pt-16 sm:px-6">
+			<p class="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-primary">Lima · Perú</p>
+			<h1 class="max-w-3xl text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+				Ingeniería mecatrónica y automatización para tu empresa
+			</h1>
+			<p class="mt-6 max-w-2xl text-lg text-silver">
+				TOGUCHI Ingeniería &amp; Servicios S.A.C. — electricidad, CCTV, redes, domótica y prototipado. Atención directa del ingeniero responsable.
+			</p>
+			<div class="mt-10 flex flex-wrap items-center gap-4">
+				<a
+					href="https://wa.me/51936013255?text=Hola%2C%20me%20interesa%20cotizar%20un%20proyecto"
+					target="_blank"
+					rel="noopener"
+					class="rounded-md bg-primary px-6 py-3 text-base font-semibold text-darker transition-opacity hover:opacity-90"
+				>Hablemos de tu proyecto</a>
+			</div>
+		</div>
+	</section>
 </BaseLayout>

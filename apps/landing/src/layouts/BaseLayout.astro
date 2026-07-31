@@ -1,25 +1,51 @@
 ---
 import "../styles/global.css";
+import "@fontsource-variable/inter";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
 
 interface Props {
 	title: string;
 	description?: string;
 }
 
-const { title, description = title } = Astro.props;
+const {
+	title,
+	description = "Instalaciones eléctricas, CCTV, redes, domótica y prototipado en Lima. Atención directa del ingeniero responsable.",
+} = Astro.props;
+
+const site = "https://toguchi.com.pe";
+const ogImage = `${site}/og-image.png`;
 ---
 
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="scroll-smooth">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<meta name="description" content={description} />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
 		<title>{title}</title>
+		<meta name="description" content={description} />
+		<link rel="canonical" href={site} />
+		<meta name="theme-color" content="#1A1A1A" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" sizes="48x48" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content={site} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:image" content={ogImage} />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:locale" content="es_PE" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:image" content={ogImage} />
 	</head>
-	<body>
-		<slot />
+	<body class="bg-darker text-white antialiased">
+		<Nav />
+		<main>
+			<slot />
+		</main>
+		<Footer />
 	</body>
 </html>

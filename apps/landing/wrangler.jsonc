@@ -3,6 +3,12 @@
 	"compatibility_date": "2026-07-31",
 	"compatibility_flags": ["global_fetch_strictly_public"],
 	"name": "toguchi-landing",
+	"workers_dev": true,
+	"preview_urls": true,
+	"routes": [
+		{ "pattern": "toguchi.com.pe", "custom_domain": true },
+		{ "pattern": "www.toguchi.com.pe", "custom_domain": true }
+	],
 	"main": "@astrojs/cloudflare/entrypoints/server",
 	"assets": {
 		"directory": "./dist",
