@@ -1,0 +1,65 @@
+---
+const services = [
+	{
+		num: "01",
+		title: "Instalaciones eléctricas",
+		desc: "Instalaciones nuevas, ampliaciones y correctivos con protocolo de pruebas al cierre.",
+		tags: ["Tableros", "Pozos a tierra", "Mediciones certificadas", "Iluminación", "Mantenimiento"],
+	},
+	{
+		num: "02",
+		title: "CCTV y seguridad electrónica",
+		desc: "Videovigilancia dimensionada por zonas críticas, con acceso remoto configurado y capacitación de uso.",
+		tags: ["Cámaras IP", "NVR", "Monitoreo remoto", "Control de acceso", "Videoporteros"],
+	},
+	{
+		num: "03",
+		title: "Redes y cableado estructurado",
+		desc: "Datos y WiFi empresarial con puntos certificados y documentación entregada.",
+		tags: ["Cableado Cat6", "WiFi empresarial", "Racks", "Certificación de puntos", "Fibra"],
+	},
+	{
+		num: "04",
+		title: "Tableros y control industrial",
+		desc: "Diseño y armado de tableros de fuerza y automatización con planos y rotulado.",
+		tags: ["Tableros de fuerza", "Automatización", "PLC", "Variadores", "Planos eléctricos"],
+	},
+	{
+		num: "05",
+		title: "Domótica e IoT",
+		desc: "Automatización de espacios y monitoreo con sensores, integrado a tu celular.",
+		tags: ["Iluminación inteligente", "Sensores", "Monitoreo remoto", "Riego automatizado", "Integración app"],
+	},
+	{
+		num: "06",
+		title: "Mecatrónica y prototipado",
+		desc: "Prototipos electrónicos, adaptación de equipos importados y soluciones a medida — de la idea al equipo funcionando.",
+		tags: ["Impresión 3D", "Escaneo 3D", "Diseño de circuitos", "Retrofit 110V/220V", "Reingeniería de equipos"],
+	},
+];
+---
+
+<section id="servicios" class="scroll-mt-20 bg-darker">
+	<div class="mx-auto max-w-6xl px-4 py-24 sm:px-6">
+		<p class="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-primary">Servicios</p>
+		<h2 class="max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
+			Capacidades con entregables concretos
+		</h2>
+		<div class="mt-12 border-t border-white/10">
+			{services.map((s) => (
+				<article class="group grid grid-cols-1 gap-2 border-b border-white/10 py-7 transition-colors hover:bg-white/[0.03] sm:grid-cols-[80px_1fr] sm:gap-6">
+					<span class="font-mono text-sm text-primary/70 transition-colors group-hover:text-primary">{s.num}</span>
+					<div>
+						<h3 class="text-lg font-semibold text-white">{s.title}</h3>
+						<p class="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-silver">{s.desc}</p>
+						<ul class="mt-4 flex flex-wrap gap-2">
+							{s.tags.map((t) => (
+								<li class="rounded border border-silver/35 px-2.5 py-1 text-xs text-silver transition-colors group-hover:border-primary/40">{t}</li>
+							))}
+						</ul>
+					</div>
+				</article>
+			))}
+		</div>
+	</div>
+</section>

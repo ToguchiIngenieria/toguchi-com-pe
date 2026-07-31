@@ -1,0 +1,49 @@
+---
+const datos = [
+	{ label: "RUC", value: "20616012798", mono: true },
+	{ label: "Sede", value: "Lima, Perú", mono: true },
+	{ label: "Registro SUNARP", value: "Partida 16232829", mono: true },
+	{ label: "Servicios", value: "Electricidad · CCTV · Redes · Control industrial · Domótica · Mecatrónica", mono: false },
+];
+const valores = ["Puntualidad", "Calidad", "Disciplina", "Mejora continua", "Servicio"];
+---
+
+<section id="nosotros" class="scroll-mt-20 bg-dark">
+	<div class="mx-auto max-w-6xl px-4 py-24 sm:px-6">
+		<p class="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-primary">Nosotros</p>
+		<div class="grid grid-cols-1 gap-12 lg:grid-cols-3">
+			<div class="lg:col-span-2">
+				<h2 class="max-w-xl text-3xl font-bold tracking-tight sm:text-4xl">
+					Ingeniería con nombre propio
+				</h2>
+				<p class="mt-6 max-w-2xl text-[15px] leading-relaxed text-silver">
+					TOGUCHI Ingeniería &amp; Servicios nace de una convicción: quien diseña la solución es quien responde por ella. Somos una empresa formalmente constituida en Lima, especializada en instalaciones eléctricas, seguridad electrónica, automatización y desarrollo mecatrónico.
+				</p>
+				<p class="mt-4 max-w-2xl text-[15px] leading-relaxed text-silver">
+					Nuestra forma de trabajar hereda la cultura japonesa de nuestro fundador: puntualidad como norma, rigor en cada detalle y mejora continua — el principio del kaizen aplicado a la ingeniería peruana.
+				</p>
+				<p class="mt-4 max-w-2xl text-[15px] leading-relaxed text-silver">
+					Cada proyecto se entrega con documentación, pruebas y la responsabilidad directa de un ingeniero que da la cara.
+				</p>
+				<ul class="mt-8 flex flex-wrap gap-x-8 gap-y-3">
+					{valores.map((v) => (
+						<li class="flex items-center gap-2 text-sm font-semibold text-white">
+							<span class="h-1.5 w-1.5 rotate-45 bg-primary"></span>{v}
+						</li>
+					))}
+				</ul>
+			</div>
+			<aside class="self-start rounded-lg border border-white/10 bg-darker p-6">
+				<p class="mb-5 text-sm font-semibold text-white">Empresa formalmente constituida</p>
+				<dl class="space-y-5">
+					{datos.map((d) => (
+						<div>
+							<dt class="text-xs uppercase tracking-wider text-silver/70">{d.label}</dt>
+							<dd class={`mt-1 text-sm text-white ${d.mono ? "font-mono" : ""}`}>{d.value}</dd>
+						</div>
+					))}
+				</dl>
+			</aside>
+		</div>
+	</div>
+</section>
