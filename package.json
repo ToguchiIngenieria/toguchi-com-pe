@@ -1,0 +1,17 @@
+{
+  "name": "toguchi-com-pe",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/landing",
+    "build": "npm run build --workspace=apps/landing",
+    "preview": "npm run preview --workspace=apps/landing"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

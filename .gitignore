@@ -1,0 +1,28 @@
+# Dependencias
+node_modules/
+**/node_modules/
+
+# Builds Astro
+dist/
+**/dist/
+.astro/
+**/.astro/
+
+# Cloudflare
+.wrangler/
+**/.wrangler/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Editor / SO
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+
+# Logs
+npm-debug.log*
+*.log
