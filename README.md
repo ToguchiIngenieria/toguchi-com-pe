@@ -1,11 +1,11 @@
 # Toguchi Ingeniería y Servicios S.A.C. — Landing Page
 
 Monorepo del sitio web corporativo de **TOGUCHI INGENIERÍA Y SERVICIOS S.A.C.**
-(RUC 20616012798), desplegado en [toguchi.com.pe](https://toguchi.com.pe) vía Cloudflare Pages.
+(RUC 20616012798), desplegado en [toguchi.com.pe](https://toguchi.com.pe) vía Cloudflare Workers.
 
 ## Stack
 
-- [Astro 5+](https://astro.build)
+- [Astro 7+](https://astro.build)
 - [Tailwind CSS 4+](https://tailwindcss.com)
 - TypeScript
 - npm workspaces (monorepo)
@@ -24,7 +24,7 @@ npm run dev
 
 ## Deploy
 
-Deploy automático a Cloudflare Pages en cada push a `main`.
+Deploy automático a Cloudflare Workers en cada push a `main`.
 
 ## Licencia
 
