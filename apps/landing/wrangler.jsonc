@@ -9,6 +9,9 @@
 		{ "pattern": "toguchi.com.pe", "custom_domain": true },
 		{ "pattern": "www.toguchi.com.pe", "custom_domain": true }
 	],
+	"kv_namespaces": [
+		{ "binding": "LEADS", "id": "62e3482416074ca7a6bfc770a39801e9" }
+	],
 	"main": "@astrojs/cloudflare/entrypoints/server",
 	"assets": {
 		"directory": "./dist",

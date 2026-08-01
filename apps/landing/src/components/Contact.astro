@@ -1,0 +1,100 @@
+---
+const servicios = [
+	"Instalaciones eléctricas",
+	"CCTV y seguridad electrónica",
+	"Redes y cableado estructurado",
+	"Tableros y control industrial",
+	"Domótica e IoT",
+	"Mecatrónica y prototipado",
+	"Otro",
+];
+const inputClass =
+	"w-full rounded-md border border-white/10 bg-darker px-4 py-3 text-sm text-white placeholder:text-silver/50 focus:border-primary focus:outline-none";
+---
+
+<section id="contacto" class="scroll-mt-20 bg-dark">
+	<div class="mx-auto max-w-6xl px-4 py-24 sm:px-6">
+		<div class="grid grid-cols-1 gap-12 lg:grid-cols-2">
+			<div>
+				<p class="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-primary">Contacto</p>
+				<h2 class="max-w-md text-3xl font-bold tracking-tight sm:text-4xl">
+					Cuéntanos tu proyecto
+				</h2>
+				<p class="mt-6 max-w-md text-[15px] leading-relaxed text-silver">
+					Completa el formulario y te contactamos por WhatsApp para evaluar la mejor solución técnica. Si tienes fotos del problema o del espacio, tenlas a la mano — nos ayudan a cotizar más rápido.
+				</p>
+				<p class="mt-4 max-w-md text-[15px] leading-relaxed text-silver">
+					¿Prefieres escribir directo?&nbsp;
+					<a href="https://wa.me/51936013255?text=Hola%2C%20me%20interesa%20cotizar%20un%20proyecto" target="_blank" rel="noopener" class="font-medium text-primary hover:underline">Escríbenos por WhatsApp</a>
+				</p>
+			</div>
+			<form id="form-contacto" class="space-y-4" novalidate>
+				<input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true" />
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+					<input type="text" name="nombre" required maxlength="100" placeholder="Nombre *" class={inputClass} />
+					<input type="text" name="empresa" maxlength="120" placeholder="Empresa (opcional)" class={inputClass} />
+				</div>
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+					<input type="tel" name="whatsapp" required maxlength="20" placeholder="WhatsApp *" class={inputClass} />
+					<input type="text" name="distrito" maxlength="60" placeholder="Distrito (opcional)" class={inputClass} />
+				</div>
+				<select name="servicio" required class={inputClass}>
+					<option value="" disabled selected>¿Qué servicio necesitas? *</option>
+					{servicios.map((s) => <option value={s}>{s}</option>)}
+				</select>
+				<select name="urgencia" class={inputClass}>
+					<option value="" disabled selected>¿Para cuándo lo necesitas?</option>
+					<option value="Lo antes posible">Lo antes posible</option>
+					<option value="Dentro de este mes">Dentro de este mes</option>
+					<option value="Aún estoy cotizando">Aún estoy cotizando</option>
+				</select>
+				<textarea name="mensaje" required maxlength="2000" rows="4" placeholder="Cuéntanos tu proyecto o problema *" class={inputClass}></textarea>
+				<button type="submit" class="w-full rounded-md bg-primary px-6 py-3 text-base font-semibold text-darker transition-opacity hover:opacity-90 sm:w-auto">
+					Enviar consulta
+				</button>
+				<p id="form-status" class="hidden text-sm" role="status"></p>
+			</form>
+		</div>
+	</div>
+</section>
+
+<script>
+	const form = document.getElementById("form-contacto") as HTMLFormElement | null;
+	const status = document.getElementById("form-status");
+
+	function showStatus(msg: string, ok: boolean) {
+		if (!status) return;
+		status.textContent = msg;
+		status.classList.remove("hidden", "text-primary", "text-red-400");
+		status.classList.add(ok ? "text-primary" : "text-red-400");
+	}
+
+	form?.addEventListener("submit", async (e) => {
+		e.preventDefault();
+		if (!form.checkValidity()) {
+			form.reportValidity();
+			return;
+		}
+		const btn = form.querySelector("button[type=submit]") as HTMLButtonElement;
+		btn.disabled = true;
+		btn.textContent = "Enviando...";
+		try {
+			const res = await fetch("/api/contacto", {
+				method: "POST",
+				body: new FormData(form),
+			});
+			const data = await res.json();
+			if (data.ok) {
+				form.reset();
+				showStatus("Consulta recibida. Te contactaremos por WhatsApp.", true);
+			} else {
+				showStatus(data.error || "No se pudo enviar. Inténtalo de nuevo.", false);
+			}
+		} catch {
+			showStatus("Error de conexión. Escríbenos por WhatsApp.", false);
+		} finally {
+			btn.disabled = false;
+			btn.textContent = "Enviar consulta";
+		}
+	});
+</script>
