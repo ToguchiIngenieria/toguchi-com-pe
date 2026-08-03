@@ -1,0 +1,70 @@
+---
+const faqs = [
+	{
+		q: "¿Atienden hogares o solo empresas?",
+		a: "Atendemos ambos. Trabajamos con empresas, instituciones y viviendas en Lima y Callao.",
+	},
+	{
+		q: "¿Puedo enviar fotos por WhatsApp para cotizar?",
+		a: "Sí, y lo recomendamos. Las fotos del problema o del espacio nos permiten cotizar más rápido y con mayor precisión.",
+	},
+	{
+		q: "¿Cobran la visita de evaluación?",
+		a: "Depende del caso. Muchas evaluaciones se resuelven con fotos y una conversación. Si la visita técnica es necesaria, te lo indicamos antes de coordinarla.",
+	},
+	{
+		q: "¿Entregan certificado de pozo a tierra?",
+		a: "Sí. Entregamos el protocolo de pruebas con la medición de resistencia firmada por ingeniero colegiado, conforme al CNE.",
+	},
+	{
+		q: "¿Qué garantía tienen los trabajos?",
+		a: "60 días de garantía sobre nuestra mano de obra. Los materiales y equipos mantienen la garantía de su fabricante.",
+	},
+	{
+		q: "¿Trabajan con locales en funcionamiento?",
+		a: "Sí. Coordinamos horarios y ejecutamos con el orden y la limpieza que corresponde a un espacio en uso.",
+	},
+	{
+		q: "¿En qué zonas de Lima atienden?",
+		a: "Atendemos Lima Metropolitana y Callao. Tenemos presencia frecuente en San Miguel, Magdalena, Pueblo Libre, Jesús María, San Isidro, Cercado de Lima y Callao.",
+	},
+	{
+		q: "¿Emiten factura?",
+		a: "Sí. Somos una empresa formalmente constituida (RUC 20616012798) y emitimos factura o boleta electrónica según lo que necesites.",
+	},
+];
+---
+
+<section id="faq" class="scroll-mt-20 bg-darker">
+	<div class="mx-auto max-w-4xl px-4 py-24 sm:px-6">
+		<p class="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-primary">Preguntas frecuentes</p>
+		<h2 class="max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
+			Lo que suelen preguntarnos
+		</h2>
+
+		<div class="mt-12 border-t border-white/10">
+			{faqs.map((f) => (
+				<details class="group border-b border-white/10">
+					<summary class="flex cursor-pointer items-center justify-between gap-4 py-5 text-[15px] font-medium text-white transition-colors hover:text-primary">
+						{f.q}
+						<svg class="h-4 w-4 shrink-0 text-primary transition-transform group-open:rotate-45" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+							<line x1="12" y1="5" x2="12" y2="19"></line>
+							<line x1="5" y1="12" x2="19" y2="12"></line>
+						</svg>
+					</summary>
+					<p class="pb-5 pr-8 text-[15px] leading-relaxed text-silver">{f.a}</p>
+				</details>
+			))}
+		</div>
+	</div>
+
+	<script type="application/ld+json" set:html={JSON.stringify({
+		"@context": "https://schema.org",
+		"@type": "FAQPage",
+		"mainEntity": faqs.map((f) => ({
+			"@type": "Question",
+			"name": f.q,
+			"acceptedAnswer": { "@type": "Answer", "text": f.a }
+		}))
+	})} />
+</section>

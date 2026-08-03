@@ -1,0 +1,57 @@
+---
+const pasos = [
+	{
+		num: "01",
+		title: "Contacto",
+		desc: "Nos escribes por WhatsApp o el formulario con fotos y una descripción del problema.",
+	},
+	{
+		num: "02",
+		title: "Diagnóstico técnico",
+		desc: "Evaluamos el caso. Si hace falta, visitamos el lugar para medir y verificar las condiciones reales antes de proponer nada.",
+	},
+	{
+		num: "03",
+		title: "Cotización con desglose",
+		desc: "Recibes el detalle de materiales, mano de obra y plazo por escrito. Sin sorpresas después.",
+	},
+	{
+		num: "04",
+		title: "Ejecución",
+		desc: "Ejecutamos el trabajo con el orden y la limpieza que corresponde a un espacio en uso.",
+	},
+	{
+		num: "05",
+		title: "Pruebas y entrega",
+		desc: "Probamos lo instalado y entregamos la documentación del servicio.",
+	},
+	{
+		num: "06",
+		title: "Garantía y soporte",
+		desc: "60 días de garantía sobre nuestra mano de obra. Los materiales y equipos mantienen la garantía de su fabricante.",
+	},
+];
+---
+
+<section id="proceso" class="scroll-mt-20 bg-dark">
+	<div class="mx-auto max-w-6xl px-4 py-24 sm:px-6">
+		<p class="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-primary">Proceso</p>
+		<h2 class="max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
+			Cómo trabajamos
+		</h2>
+		<p class="mt-4 max-w-2xl text-[15px] leading-relaxed text-silver">
+			Del primer mensaje a la entrega, con los mismos seis pasos en cada proyecto.
+		</p>
+
+		<ol class="relative mt-14 grid grid-cols-1 gap-x-12 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+			{pasos.map((p) => (
+				<li class="relative border-t border-white/10 pt-5">
+					<span class="absolute -top-px left-0 h-px w-10 bg-primary"></span>
+					<span class="font-mono text-sm text-primary">{p.num}</span>
+					<h3 class="mt-2 text-lg font-semibold text-white">{p.title}</h3>
+					<p class="mt-2 text-[15px] leading-relaxed text-silver">{p.desc}</p>
+				</li>
+			))}
+		</ol>
+	</div>
+</section>
