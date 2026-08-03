@@ -38,11 +38,11 @@ const inputClass =
 					<input type="tel" name="whatsapp" required maxlength="20" placeholder="WhatsApp *" class={inputClass} />
 					<input type="text" name="distrito" maxlength="60" placeholder="Distrito (opcional)" class={inputClass} />
 				</div>
-				<select name="servicio" required class={inputClass}>
+				<select name="servicio" id="servicio" aria-label="¿Qué servicio necesitas?" required class={inputClass}>
 					<option value="" disabled selected>¿Qué servicio necesitas? *</option>
 					{servicios.map((s) => <option value={s}>{s}</option>)}
 				</select>
-				<select name="urgencia" class={inputClass}>
+				<select name="urgencia" id="urgencia" aria-label="¿Para cuándo lo necesitas?" class={inputClass}>
 					<option value="" disabled selected>¿Para cuándo lo necesitas?</option>
 					<option value="Lo antes posible">Lo antes posible</option>
 					<option value="Dentro de este mes">Dentro de este mes</option>
