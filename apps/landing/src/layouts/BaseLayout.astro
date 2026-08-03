@@ -50,11 +50,19 @@ const ogImage = `${site}/og-image.png`;
 			"logo": `${site}/favicon.svg`,
 			"image": ogImage,
 			"telephone": "+51936013255",
+			"priceRange": "$$",
 			"areaServed": { "@type": "City", "name": "Lima" },
+			"openingHoursSpecification": {
+				"@type": "OpeningHoursSpecification",
+				"dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+				"opens": "00:00",
+				"closes": "23:59"
+			},
 			"address": {
 				"@type": "PostalAddress",
-				"addressLocality": "Lima",
+				"addressLocality": "San Miguel",
 				"addressRegion": "Lima",
+				"postalCode": "15088",
 				"addressCountry": "PE"
 			},
 			"identifier": { "@type": "PropertyValue", "name": "RUC", "value": "20616012798" },
