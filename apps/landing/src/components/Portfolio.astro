@@ -114,7 +114,7 @@ const projects = [
 		<div class="mt-16 space-y-20">
 			{projects.map((p, i) => (
 				<article class="grid grid-cols-1 items-center gap-8 lg:grid-cols-2 lg:gap-12">
-					<div class={`gallery relative order-2 ${i % 2 === 1 ? "lg:order-2" : "lg:order-1"}`} data-gallery>
+					<div class={`gallery relative order-2 ${p.wide ? "" : "mx-auto w-4/5 lg:w-4/5"} ${i % 2 === 1 ? "lg:order-2" : "lg:order-1"}`} data-gallery>
 						<div
 							class="track flex snap-x snap-mandatory overflow-x-auto rounded-lg border border-white/10"
 							data-track
