@@ -1,0 +1,32 @@
+---
+const wa = "https://wa.me/51936013255?text=Hola%2C%20me%20interesa%20cotizar%20un%20proyecto";
+---
+
+<a
+	id="wa-float"
+	href={wa}
+	target="_blank"
+	rel="noopener"
+	aria-label="Escríbenos por WhatsApp"
+	class="fixed bottom-5 right-5 z-40 flex h-14 w-14 translate-y-4 items-center justify-center rounded-full bg-primary opacity-0 shadow-lg shadow-black/40 transition-all duration-300 hover:opacity-90 sm:bottom-6 sm:right-6"
+>
+	<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" class="text-darker" aria-hidden="true">
+		<path d="M17.47 14.38c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.47-1.75-1.65-2.05-.17-.3-.02-.46.13-.6.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.6-.92-2.2-.24-.57-.49-.5-.67-.5h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.47s1.06 2.87 1.21 3.07c.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.63.71.22 1.36.19 1.87.12.57-.09 1.75-.72 2-1.41.25-.69.25-1.28.17-1.41-.07-.13-.27-.2-.57-.35z"></path>
+		<path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.75 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 18.13h-.01c-1.49 0-2.95-.4-4.22-1.16l-.3-.18-3.12.82.83-3.04-.2-.31a8.22 8.22 0 0 1-1.26-4.39c0-4.54 3.7-8.23 8.24-8.23 2.2 0 4.27.86 5.82 2.42a8.17 8.17 0 0 1 2.41 5.82c0 4.54-3.69 8.25-8.19 8.25z"></path>
+	</svg>
+</a>
+
+<script>
+	const btn = document.getElementById("wa-float");
+
+	function actualizar() {
+		if (!btn) return;
+		const visible = window.scrollY > 400;
+		btn.classList.toggle("opacity-0", !visible);
+		btn.classList.toggle("translate-y-4", !visible);
+		btn.classList.toggle("pointer-events-none", !visible);
+	}
+
+	actualizar();
+	window.addEventListener("scroll", actualizar, { passive: true });
+</script>

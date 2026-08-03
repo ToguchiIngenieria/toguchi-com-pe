@@ -3,6 +3,7 @@ import "../styles/global.css";
 import "@fontsource-variable/inter";
 import Nav from "../components/Nav.astro";
 import Footer from "../components/Footer.astro";
+import WhatsAppFloat from "../components/WhatsAppFloat.astro";
 
 interface Props {
 	title: string;
@@ -40,6 +41,38 @@ const ogImage = `${site}/og-image.png`;
 		<meta property="og:locale" content="es_PE" />
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:image" content={ogImage} />
+		<script type="application/ld+json" set:html={JSON.stringify({
+			"@context": "https://schema.org",
+			"@type": "ProfessionalService",
+			"name": "TOGUCHI Ingeniería & Servicios S.A.C.",
+			"description": "Instalaciones eléctricas, CCTV, redes, tableros de control, domótica, mecatrónica y remodelación para empresas y hogares en Lima.",
+			"url": site,
+			"logo": `${site}/favicon.svg`,
+			"image": ogImage,
+			"telephone": "+51936013255",
+			"areaServed": { "@type": "City", "name": "Lima" },
+			"address": {
+				"@type": "PostalAddress",
+				"addressLocality": "Lima",
+				"addressRegion": "Lima",
+				"addressCountry": "PE"
+			},
+			"identifier": { "@type": "PropertyValue", "name": "RUC", "value": "20616012798" },
+			"knowsLanguage": ["es", "ja"],
+			"hasOfferCatalog": {
+				"@type": "OfferCatalog",
+				"name": "Servicios",
+				"itemListElement": [
+					"Instalaciones eléctricas",
+					"CCTV y seguridad electrónica",
+					"Redes y cableado estructurado",
+					"Tableros y control industrial",
+					"Domótica e IoT",
+					"Mecatrónica y prototipado",
+					"Remodelación y acondicionamiento"
+				].map((s) => ({ "@type": "Offer", "itemOffered": { "@type": "Service", "name": s } }))
+			}
+		})} />
 	</head>
 	<body class="bg-darker text-white antialiased">
 		<Nav />
@@ -47,5 +80,6 @@ const ogImage = `${site}/og-image.png`;
 			<slot />
 		</main>
 		<Footer />
+		<WhatsAppFloat />
 	</body>
 </html>
