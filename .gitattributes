@@ -1,0 +1,2 @@
+# Los vCard requieren CRLF (RFC 6350). git no debe normalizarlos.
+*.vcf -text
