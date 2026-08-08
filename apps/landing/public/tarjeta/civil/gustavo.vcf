@@ -1,0 +1,12 @@
+BEGIN:VCARD
+VERSION:3.0
+N:Salvador Girón;Gustavo;André;;
+FN:Gustavo André Salvador Girón
+ORG:TOGUCHI Ingeniería & Servicios
+TITLE:Ingeniero Civil
+TEL;TYPE=CELL,VOICE:+51921179882
+EMAIL;TYPE=INTERNET,PREF:gustavosalvadorgiron@gmail.com
+URL:https://toguchi.com.pe
+ADR;TYPE=WORK:;;Lima;Lima;;;Perú
+NOTE:Obras civiles, acabados, remodelación y consultoría técnica.
+END:VCARD
