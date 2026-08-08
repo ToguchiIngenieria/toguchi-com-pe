@@ -107,13 +107,13 @@ const projects = [
 		<h2 class="max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
 			Trabajos ejecutados
 		</h2>
-		<p class="mt-4 max-w-2xl text-[15px] leading-relaxed text-silver">
+		<p data-reveal class="mt-4 max-w-2xl text-[15px] leading-relaxed text-silver">
 			Proyectos reales entregados en Lima y Callao. Cada caso muestra el problema encontrado, la solución ejecutada y el resultado.
 		</p>
 
 		<div class="mt-16 space-y-20">
 			{projects.map((p, i) => (
-				<article class="grid grid-cols-1 items-center gap-8 lg:grid-cols-2 lg:gap-12">
+				<article data-reveal data-reveal-delay={i * 40} class="grid grid-cols-1 items-center gap-8 lg:grid-cols-2 lg:gap-12">
 					<div class={`gallery relative order-2 ${p.wide ? "" : "mx-auto w-4/5 lg:w-4/5"} ${i % 2 === 1 ? "lg:order-2" : "lg:order-1"}`} data-gallery>
 						<div
 							class="track flex snap-x snap-mandatory overflow-x-auto rounded-lg border border-white/10"

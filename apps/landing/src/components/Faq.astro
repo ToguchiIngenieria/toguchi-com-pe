@@ -43,8 +43,8 @@ const faqs = [
 		</h2>
 
 		<div class="mt-12 border-t border-white/10">
-			{faqs.map((f) => (
-				<details class="group border-b border-white/10">
+			{faqs.map((f, i) => (
+				<details data-reveal data-reveal-delay={i * 30} class="group border-b border-white/10">
 					<summary class="flex cursor-pointer items-center justify-between gap-4 py-5 text-[15px] font-medium text-white transition-colors hover:text-primary">
 						{f.q}
 						<svg class="h-4 w-4 shrink-0 text-primary transition-transform group-open:rotate-45" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">

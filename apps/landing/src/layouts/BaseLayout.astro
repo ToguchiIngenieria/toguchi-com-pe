@@ -4,6 +4,7 @@ import "@fontsource-variable/inter";
 import Nav from "../components/Nav.astro";
 import Footer from "../components/Footer.astro";
 import WhatsAppFloat from "../components/WhatsAppFloat.astro";
+import ScrollReveal from "../components/ScrollReveal.astro";
 
 interface Props {
 	title: string;
@@ -81,6 +82,7 @@ const ogImage = `${site}/og-image.png`;
 				].map((s) => ({ "@type": "Offer", "itemOffered": { "@type": "Service", "name": s } }))
 			}
 		})} />
+		<ScrollReveal />
 	</head>
 	<body class="bg-darker text-white antialiased">
 		<Nav />

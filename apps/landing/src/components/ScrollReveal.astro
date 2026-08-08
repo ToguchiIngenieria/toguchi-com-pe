@@ -1,0 +1,91 @@
+---
+/**
+ * ScrollReveal — aparición progresiva de elementos al entrar en pantalla.
+ *
+ * Cero dependencias. Se incluye UNA vez en el <head> de BaseLayout y luego
+ * se activa poniendo data-reveal en cualquier elemento.
+ *
+ * Uso:
+ *   <div data-reveal>...</div>
+ *   <div data-reveal data-reveal-delay="120">...</div>
+ *   {items.map((x, i) => <article data-reveal data-reveal-delay={i * 70}>...</article>)}
+ *
+ * Decisiones de diseño:
+ * - El CSS que oculta va condicionado a la clase .js-reveal, que añade un
+ *   script inline. Si el JavaScript no carga, el contenido queda visible.
+ *   Sin eso, un fallo de JS dejaría la página en blanco.
+ * - Respeta prefers-reduced-motion: quien lo tenga activo ve todo de una vez.
+ * - Cada elemento se deja de observar al aparecer: el coste tiende a cero.
+ * - Se reengancha en astro:page-load por si algún día se activan las View
+ *   Transitions de Astro.
+ */
+---
+
+<script is:inline>
+  /* Debe correr antes del primer pintado. Por eso va inline y en el head. */
+  document.documentElement.classList.add('js-reveal');
+</script>
+
+<style is:global>
+  .js-reveal [data-reveal] {
+    opacity: 0;
+    transform: translateY(30px);
+    transition:
+      opacity   .42s cubic-bezier(.16, 1, .3, 1),
+      transform .42s cubic-bezier(.16, 1, .3, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+  }
+
+  .js-reveal [data-reveal].is-visible {
+    opacity: 1;
+    transform: none;
+    will-change: auto;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .js-reveal [data-reveal],
+    .js-reveal [data-reveal].is-visible {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  function initScrollReveal() {
+    const els = document.querySelectorAll('[data-reveal]:not(.is-visible)');
+    if (!els.length) return;
+
+    const sinMovimiento =
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Sin soporte o con movimiento reducido: se muestra todo de golpe.
+    if (sinMovimiento || !('IntersectionObserver' in window)) {
+      els.forEach((el) => el.classList.add('is-visible'));
+      return;
+    }
+
+    els.forEach((el) => {
+      const d = el.dataset.revealDelay;
+      if (d) el.style.setProperty('--reveal-delay', d + 'ms');
+    });
+
+    const io = new IntersectionObserver(
+      (entradas, obs) => {
+        entradas.forEach((e) => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('is-visible');
+          obs.unobserve(e.target);
+        });
+      },
+      { rootMargin: '0px 0px -22% 0px', threshold: 0.15 }
+    );
+
+    els.forEach((el) => io.observe(el));
+  }
+
+  initScrollReveal();
+  document.addEventListener('astro:page-load', initScrollReveal);
+</script>
