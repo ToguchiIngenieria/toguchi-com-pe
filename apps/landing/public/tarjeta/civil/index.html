@@ -90,6 +90,8 @@
     display:block;font-size:11px;color:var(--silver);margin-top:2px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
+  /* el correo es largo: se reduce un punto para que quepa entero */
+  .tile span.mail{font-size:10px;letter-spacing:-.15px}
   .tile .txt{min-width:0}
 
   .save:active,.tile:active{transform:scale(.98)}
@@ -147,7 +149,7 @@
     </a>
     <a class="tile" href="mailto:gustavosalvadorgiron@gmail.com">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2.4 6.5 8.5 5.9a2 2 0 0 0 2.2 0l8.5-5.9"/></svg>
-      <span class="txt"><b>Email</b><span>gustavosalvadorgiron@gmail.com</span></span>
+      <span class="txt"><b>Email</b><span class="mail">gustavosalvadorgiron@gmail.com</span></span>
     </a>
     <a class="tile" href="https://toguchi.com.pe">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 0 20a15.3 15.3 0 0 1 0-20z"/></svg>
