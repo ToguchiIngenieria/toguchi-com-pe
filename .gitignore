@@ -26,3 +26,10 @@ Thumbs.db
 # Logs
 npm-debug.log*
 *.log
+
+# Notas internas de trabajo. Este repositorio es publico: las instrucciones de
+# trabajo y las notas de infraestructura no son parte del sitio y no se
+# publican, aunque su contenido sea visible por otra via (los nameservers lo
+# son por DNS). La documentacion de infraestructura vive fuera del repo.
+CLAUDE.md
+Nameservers*.txt
