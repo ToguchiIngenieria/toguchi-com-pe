@@ -1,5 +1,13 @@
 ---
-import Asistente from "./Asistente.astro";
+/**
+ * Contact.astro — seccion de contacto.
+ *
+ * Ya no incrusta el asistente: este vive una sola vez en BaseLayout como chat
+ * emergente. Aqui queda el segundo punto de entrada, el boton
+ * `data-asistente-abrir`, que abre esa misma ventana. Un solo asistente y una
+ * sola conversacion.
+ */
+const wa = "https://wa.me/51970130174?text=Hola%2C%20me%20interesa%20cotizar%20un%20proyecto";
 ---
 
 <section id="contacto" class="scroll-mt-20 bg-dark">
@@ -13,18 +21,28 @@ import Asistente from "./Asistente.astro";
 				<p data-reveal data-reveal-delay="0" class="mt-6 max-w-md text-[15px] leading-relaxed text-silver">
 					Responde unas preguntas en el asistente y te contactamos por WhatsApp para evaluar la mejor solución técnica. Si tienes fotos del problema o del espacio, tenlas a la mano — nos ayudan a cotizar más rápido.
 				</p>
-				<p data-reveal data-reveal-delay="50" class="mt-4 max-w-md text-[15px] leading-relaxed text-silver">
-					¿Prefieres escribir directo?&nbsp;
-					<a href="https://wa.me/51970130174?text=Hola%2C%20me%20interesa%20cotizar%20un%20proyecto" target="_blank" rel="noopener" class="font-medium text-primary hover:underline">Escríbenos por WhatsApp</a>
-				</p>
-				<div data-reveal data-reveal-delay="100" class="mt-10 border-t border-white/10 pt-6">
-					<h3 class="text-xs font-semibold uppercase tracking-wider text-primary">Zonas de atención</h3>
-					<p class="mt-3 max-w-md text-sm leading-relaxed text-silver">
-						Atendemos proyectos en Lima Metropolitana y Callao, con presencia frecuente en San Miguel, Magdalena del Mar, Pueblo Libre, Jesús María, San Isidro, Cercado de Lima, Breña, Lince, Surco, La Molina y Callao. Si tu proyecto está fuera de estas zonas o en provincia, escríbenos igual y lo evaluamos.
-					</p>
+				<div data-reveal data-reveal-delay="50" class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+					<button
+						type="button"
+						data-asistente-abrir
+						class="rounded-md bg-primary px-6 py-3 text-base font-semibold text-darker transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-dark"
+					>Iniciar conversación</button>
+					<a href={wa} target="_blank" rel="noopener" class="text-[15px] font-medium text-primary hover:underline">Prefiero WhatsApp</a>
 				</div>
+				<noscript>
+					<p class="mt-4 max-w-md text-[15px] leading-relaxed text-silver">
+						El asistente necesita JavaScript.&nbsp;
+						<a href={wa} target="_blank" rel="noopener" class="font-medium text-primary hover:underline">Escríbenos por WhatsApp</a>
+						&nbsp;y te atendemos igual.
+					</p>
+				</noscript>
 			</div>
-			<Asistente />
+			<div data-reveal data-reveal-delay="100" class="lg:border-l lg:border-white/10 lg:pl-12">
+				<h3 class="text-xs font-semibold uppercase tracking-wider text-primary">Zonas de atención</h3>
+				<p class="mt-3 max-w-md text-sm leading-relaxed text-silver">
+					Atendemos proyectos en Lima Metropolitana y Callao, con presencia frecuente en San Miguel, Magdalena del Mar, Pueblo Libre, Jesús María, San Isidro, Cercado de Lima, Breña, Lince, Surco, La Molina y Callao. Si tu proyecto está fuera de estas zonas o en provincia, escríbenos igual y lo evaluamos.
+				</p>
+			</div>
 		</div>
 	</div>
 </section>

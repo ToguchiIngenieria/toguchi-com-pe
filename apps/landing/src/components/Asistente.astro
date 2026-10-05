@@ -1,11 +1,16 @@
 ---
 /**
- * Asistente.astro — asistente de contacto GUIADO. Sin LLM.
+ * Asistente.astro — asistente de contacto GUIADO, como chat emergente. Sin LLM.
  *
- * Reemplaza al formulario de la seccion de contacto. El flujo es un automata
- * determinista por botones: no hay generacion de texto, no hay llamada a
- * ningun modelo, y el asistente NUNCA entrega precios, plazos ni compromisos.
- * Solo recoge datos y los deriva.
+ * Vive una sola vez en BaseLayout, anclado abajo a la derecha, y reemplaza al
+ * boton flotante de WhatsApp. Tiene dos puntos de entrada y una sola
+ * conversacion: la burbuja flotante y el boton «Iniciar conversacion» de la
+ * seccion de contacto, que abre esta misma ventana por
+ * `[data-asistente-abrir]`.
+ *
+ * El flujo es un automata determinista por botones: no hay generacion de
+ * texto, no hay llamada a ningun modelo, y el asistente NUNCA entrega precios,
+ * plazos ni compromisos. Solo recoge datos y los deriva.
  *
  * Contrato con el backend — /api/contacto NO se toca:
  * - Envia el MISMO FormData al MISMO endpoint que enviaba el formulario.
@@ -18,16 +23,36 @@
  * - `website` es el honeypot del formulario anterior, conservado.
  * - No se recoge ningun dato que el formulario no recogiera ya.
  *
- * Accesibilidad:
- * - Cada opcion es un <button> real: navegable por teclado sin JS extra.
- * - El log de mensajes es aria-live; la burbuja de "escribiendo" queda
- *   aria-hidden para que el lector de pantalla no la anuncie.
- * - prefers-reduced-motion: sin animacion de tipeo y sin transiciones.
- * - Sin JavaScript: el panel se oculta y queda el enlace de WhatsApp.
+ * Por que cerrar no borra nada: la ventana se oculta con `visibility`, no se
+ * desmonta. El DOM de la conversacion sigue en pie, asi que minimizar y
+ * reabrir dentro de la misma visita conserva lo respondido sin necesidad de
+ * guardar estado en ningun sitio.
+ *
+ * Accesibilidad. La modalidad DEPENDE DEL ANCHO, porque lo que la ventana es
+ * depende del ancho:
+ * - En escritorio es una ventana de esquina y NO es modal: `role="dialog"` sin
+ *   `aria-modal`, el fondo se deja intacto y el foco puede salir.
+ * - Por debajo de 640 px cubre la pantalla, asi que ahi SI es modal: los
+ *   hermanos de <body> se marcan `inert` —que es lo que contiene el foco, sin
+ *   necesidad de una trampa propia—, se bloquea el scroll del documento y solo
+ *   entonces se declara `aria-modal`. Declararlo sin contener el foco seria
+ *   mentir sobre lo que hace; contenerlo con `inert` lo vuelve cierto.
+ * - La burbuja declara `aria-expanded` y `aria-controls`.
+ * - Al abrir, el foco entra en la ventana; al cerrar vuelve a la burbuja, pero
+ *   solo si estaba dentro. La ventana tiene `tabindex="-1"` para servir de
+ *   ancla cuando hay que reubicar el foco sin llevarlo a un control accionable.
+ * - Esc cierra, y decide con `e.target` y no con el foco vivo.
+ * - Cerrada, `visibility: hidden` la saca del orden de tabulacion y del arbol
+ *   de accesibilidad: no hace falta `hidden`.
+ * - Cada opcion es un <button> real, navegable por teclado.
+ * - El log es aria-live; la burbuja de «escribiendo» queda aria-hidden.
+ * - prefers-reduced-motion: sin animacion de apertura ni de tipeo.
+ * - Sin JavaScript: la burbuja se oculta y en su sitio queda un enlace flotante
+ *   a WhatsApp, mas el de la seccion de contacto.
  *
  * Presupuesto de JS: las clases que el script necesita las LEE de los nodos
- * que pinta el servidor, en vez de repetirlas. Asi hay una sola copia de cada
- * cadena de Tailwind y las dos mitades no se pueden desincronizar.
+ * que pinta el servidor, o las clona de <template>. Asi hay una sola copia de
+ * cada cadena de Tailwind y las dos mitades no se pueden desincronizar.
  */
 const WA_NUMERO = "51970130174";
 const WA_FALLBACK = `https://wa.me/${WA_NUMERO}?text=Hola%2C%20me%20interesa%20cotizar%20un%20proyecto`;
@@ -51,26 +76,61 @@ const claseMia = "ml-auto max-w-[85%] rounded-lg rounded-tr-sm bg-primary/15 px-
 const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5 text-sm text-white placeholder:text-silver/50 ${anillo}`;
 ---
 
-<div class="rounded-xl border border-white/10 bg-darker p-4 sm:p-6">
-	<noscript>
-		<style>#as-panel { display: none; }</style>
-		<p class="text-sm leading-relaxed text-silver">
-			El asistente necesita JavaScript.&nbsp;
-			<a href={WA_FALLBACK} target="_blank" rel="noopener" class="font-medium text-primary hover:underline">Escríbenos por WhatsApp</a>
-			&nbsp;y te atendemos igual.
-		</p>
-	</noscript>
+<noscript>
+	{/* Sin JavaScript la burbuja seria un boton muerto. Se oculta y en su sitio
+	    queda el enlace de WhatsApp, que es lo que habia antes aqui. */}
+	<style>#as-raiz { display: none; }</style>
+	<a
+		href={WA_FALLBACK}
+		target="_blank"
+		rel="noopener"
+		aria-label="Escríbenos por WhatsApp"
+		class="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-lg shadow-black/40 sm:bottom-6 sm:right-6"
+	>
+		<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" class="text-darker" aria-hidden="true">
+			<path d="M17.47 14.38c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.47-1.75-1.65-2.05-.17-.3-.02-.46.13-.6.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.6-.92-2.2-.24-.57-.49-.5-.67-.5h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.47s1.06 2.87 1.21 3.07c.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.63.71.22 1.36.19 1.87.12.57-.09 1.75-.72 2-1.41.25-.69.25-1.28.17-1.41-.07-.13-.27-.2-.57-.35z"></path>
+			<path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.75 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 18.13h-.01c-1.49 0-2.95-.4-4.22-1.16l-.3-.18-3.12.82.83-3.04-.2-.31a8.22 8.22 0 0 1-1.26-4.39c0-4.54 3.7-8.23 8.24-8.23 2.2 0 4.27.86 5.82 2.42a8.17 8.17 0 0 1 2.41 5.82c0 4.54-3.69 8.25-8.19 8.25z"></path>
+		</svg>
+	</a>
+</noscript>
 
-	<div id="as-panel" data-wa={WA_NUMERO}>
-		<div class="flex items-start gap-3 border-b border-white/10 pb-4">
+<div id="as-raiz" data-wa={WA_NUMERO}>
+	<button
+		id="as-burbuja"
+		type="button"
+		aria-expanded="false"
+		aria-controls="as-ventana"
+		aria-label="Abrir el asistente de TOGUCHI"
+		class={`flex items-center justify-center rounded-full bg-primary shadow-lg shadow-black/40 transition-opacity hover:opacity-90 ${anillo}`}
+	>
+		<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" class="text-darker" aria-hidden="true">
+			<polygon points="12,1 23,6.5 23,17.5 12,23 1,17.5 1,6.5" stroke="currentColor" stroke-width="1.8" />
+			<circle cx="8" cy="12" r="1.3" fill="currentColor" />
+			<circle cx="12" cy="12" r="1.3" fill="currentColor" />
+			<circle cx="16" cy="12" r="1.3" fill="currentColor" />
+		</svg>
+	</button>
+
+	<div id="as-ventana" role="dialog" aria-labelledby="as-titulo" tabindex="-1" class="flex-col overflow-hidden rounded-xl border border-white/10 bg-darker shadow-2xl shadow-black/60">
+		<div class="flex shrink-0 items-start gap-3 border-b border-white/10 p-4">
 			<span aria-hidden="true" class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">T</span>
-			<div>
-				<p class="text-sm font-semibold text-white">Asistente TOGUCHI</p>
-				<p class="text-xs leading-relaxed text-silver">Te hago unas preguntas y derivo tu consulta al ingeniero. No manejo precios ni plazos.</p>
+			<div class="min-w-0 flex-1">
+				<p id="as-titulo" class="text-sm font-semibold text-white">Asistente TOGUCHI</p>
+				<p id="as-subtitulo" class="text-xs leading-relaxed text-silver">Te hago unas preguntas y derivo tu consulta al ingeniero. No manejo precios ni plazos.</p>
 			</div>
+			<button
+				id="as-cerrar"
+				type="button"
+				aria-label="Cerrar el asistente"
+				class={`-mr-1 -mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-silver transition-colors hover:bg-white/5 hover:text-white ${anillo}`}
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+					<path d="M6 6l12 12M18 6L6 18" />
+				</svg>
+			</button>
 		</div>
 
-		<div class="mt-4">
+		<div class="shrink-0 px-4 pt-3">
 			<div class="flex items-center justify-between gap-4">
 				<p id="as-paso" class="text-xs text-silver">Paso 1 de 7</p>
 				<button
@@ -98,15 +158,21 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 			role="log"
 			aria-live="polite"
 			aria-relevant="additions"
-			class="mt-5 max-h-[21rem] space-y-3 overflow-y-auto pr-1"
+			class="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4"
 		>
 			<p class={claseBot}>Hola. Soy el asistente de TOGUCHI Ingeniería &amp; Servicios. ¿Con qué te ayudamos?</p>
 		</div>
 
-		<div id="as-respuesta" class="mt-4">
-			<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-				{CATEGORIAS.map((c) => <button type="button" data-cat={c} class={claseOpcion}>{c}</button>)}
+		<div id="as-pie" class="border-t border-white/10 p-4">
+			<div id="as-respuesta">
+				<div class="grid grid-cols-1 gap-2">
+					{CATEGORIAS.map((c) => <button type="button" data-cat={c} class={claseOpcion}>{c}</button>)}
+				</div>
 			</div>
+			<p class="mt-3 text-xs leading-relaxed text-silver/70">
+				Usamos tus datos solo para responderte esta consulta.&nbsp;
+				<a href={WA_FALLBACK} target="_blank" rel="noopener" class="text-silver underline decoration-silver/40 underline-offset-2 hover:text-primary">Prefiero escribir por WhatsApp</a>
+			</p>
 		</div>
 
 		{/* Plantillas que el script clona. Asi cada cadena de Tailwind existe una sola vez. */}
@@ -121,25 +187,127 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 		</template>
 
 		<input type="text" name="website" id="as-website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true" />
-
-		<p class="mt-4 text-xs leading-relaxed text-silver/70">
-			Usamos tus datos solo para responderte esta consulta.&nbsp;
-			<a href={WA_FALLBACK} target="_blank" rel="noopener" class="text-silver underline decoration-silver/40 underline-offset-2 hover:text-primary">Prefiero escribir por WhatsApp</a>
-		</p>
 	</div>
 </div>
 
 <style is:global>
+	/* La burbuja respeta el area segura del movil para no tapar nada ni quedar
+	   bajo la barra de gestos. */
+	#as-burbuja {
+		position: fixed;
+		z-index: 50;
+		right: max(1.25rem, env(safe-area-inset-right));
+		bottom: max(1.25rem, env(safe-area-inset-bottom));
+		height: 3.5rem;
+		width: 3.5rem;
+	}
+
+	/* Movil es la base y escritorio la excepcion, como el resto del sitio. Dos
+	   consultas complementarias (max-width: 639px / min-width: 640px) dejan un
+	   hueco en anchos fraccionarios —639.5 px con zoom o DPR raro— donde no
+	   aplica ninguna y la ventana queda sin insets ni tamaño. */
+	#as-ventana {
+		position: fixed;
+		z-index: 60;
+		display: flex;
+		left: max(0.5rem, env(safe-area-inset-left));
+		right: max(0.5rem, env(safe-area-inset-right));
+		bottom: max(0.5rem, env(safe-area-inset-bottom));
+		/* Deja visible la barra del sistema. */
+		top: calc(max(0.5rem, env(safe-area-inset-top)) + 1.5rem);
+		visibility: hidden;
+		opacity: 0;
+		transform: translateY(10px) scale(0.98);
+		transform-origin: bottom right;
+		transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0.18s;
+		/* Sin esto, arrastrar dentro del chat encadena al documento y en Chrome
+		   Android dispara el pull-to-refresh: la pagina recarga y la
+		   conversacion, que solo vive en el DOM, se pierde. */
+		overscroll-behavior: contain;
+	}
+
+	#as-raiz.as-abierto #as-ventana {
+		visibility: visible;
+		opacity: 1;
+		transform: none;
+	}
+
+	/* El log nunca baja de este alto, y lo que sobra scrollea en lugar de
+	   recortarse: en un movil en horizontal el alto fijo de la cabecera mas las
+	   opciones supera el viewport. */
+	#as-log {
+		min-height: 3.5rem;
+		overscroll-behavior: contain;
+	}
+
+	/* `min-height: 0` es lo que permite que el pie CEDA. Con el `shrink-0` que
+	   tenia, su alto era min(contenido, 60%) y no bajaba de ahi: en un movil en
+	   horizontal —ventana de 278 px de alto— la suma de cabecera, progreso, el
+	   minimo del log y el pie superaba la ventana, y `overflow-hidden` recortaba
+	   la cola del pie, que no se alcanzaba en ninguna posicion de scroll. Ahi
+	   desaparecian la nota con el enlace de WhatsApp y, peor, el aviso de error
+	   del envio. Ahora el pie se encoge y hace su propio scroll. */
+	#as-pie {
+		min-height: 0;
+		max-height: 60%;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+	}
+
+	/* Abierta, la ventana cubre la pantalla en movil: la burbuja se retira del
+	   orden de tabulacion en lugar de quedar debajo, inalcanzable. */
+	#as-raiz.as-abierto #as-burbuja {
+		visibility: hidden;
+	}
+
+	/* Escritorio: ventana anclada sobre la burbuja, y la burbuja sigue a la vista. */
+	@media (min-width: 640px) {
+		#as-ventana {
+			left: auto;
+			top: auto;
+			right: max(1.25rem, env(safe-area-inset-right));
+			bottom: calc(max(1.25rem, env(safe-area-inset-bottom)) + 4.25rem);
+			width: 380px;
+			/* dvh y no vh: en movil vh cuenta la barra del navegador. */
+			height: min(560px, calc(100dvh - 7rem));
+		}
+
+		#as-raiz.as-abierto #as-burbuja {
+			visibility: visible;
+		}
+	}
+
+	/* El candado de scroll del asistente. Va por clase y no por estilo en linea
+	   para no compartir ranura con el menu movil de Nav. */
+	body.as-bloqueado {
+		overflow: hidden;
+	}
+
+	/* Ventana muy baja —telefono en horizontal con la barra del navegador, o una
+	   ventana de escritorio diminuta—. Con el log clavado en 3,5rem, la suma de
+	   cabecera, progreso y log no cedia y el pie se quedaba en 0 px: no se veia
+	   NINGUN control, ni las opciones ni el enlace de salida. Aqui el log cede y
+	   el pie se queda con la mayor parte. */
+	@media (max-height: 340px) {
+		#as-log { min-height: 0; }
+		#as-pie { max-height: 78%; }
+		#as-subtitulo { display: none; }
+	}
+
 	@media (prefers-reduced-motion: reduce) {
+		#as-ventana { transition: none; }
 		#as-barra-fill { transition: none; }
 	}
 </style>
 
 <script>
-	const panel = document.getElementById("as-panel");
+	const raiz = document.getElementById("as-raiz");
 
-	if (panel) {
-		const WA = panel.dataset.wa;
+	if (raiz) {
+		const WA = raiz.dataset.wa;
+		const burbuja = document.getElementById("as-burbuja");
+		const ventana = document.getElementById("as-ventana");
+		const cerrarBtn = document.getElementById("as-cerrar");
 		const log = document.getElementById("as-log");
 		const zona = document.getElementById("as-respuesta");
 		const pasoTxt = document.getElementById("as-paso");
@@ -155,6 +323,130 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 		const nodo = (t) => tpl.querySelector(`[data-t="${t}"]`).cloneNode(true);
 		const claseBot = log.firstElementChild.className;
 		const claseOpcion = zona.querySelector("[data-cat]").className;
+
+		/* ---------- Abrir y cerrar ----------
+		 * Cerrar solo oculta: el DOM de la conversacion no se desmonta, asi que
+		 * reabrir dentro de la misma visita conserva lo respondido.
+		 */
+		let abierto = false;
+		let modal = false;
+		/* El MISMO umbral que decide el layout en el CSS, no uno paralelo:
+		 * `max-width: 639px` y `min-width: 640px` no son complementarios, y en un
+		 * ancho fraccionario —639,5 px con zoom— la ventana se pintaba a pantalla
+		 * completa sin ser modal, con el fondo tabulable detras. */
+		const escritorio = window.matchMedia("(min-width: 640px)");
+		/* `inert` es lo que contiene el foco. Sin soporte no se declara aria-modal,
+		 * porque entonces si seria la mentira que este encabezado se prohibe. */
+		const hayInert = "inert" in HTMLElement.prototype;
+		const SEL_FOCO = "button:not([disabled]), input:not([disabled]), a[href]";
+
+		/* En movil la ventana cubre la pantalla, asi que ahi SI es modal y se
+		 * comporta como tal: el fondo se marca `inert` —fuera del orden de
+		 * tabulacion, fuera del arbol de accesibilidad y sin recibir clics—, se
+		 * declara aria-modal y se bloquea el scroll del documento. En escritorio
+		 * es una ventana de esquina y no se toca nada del fondo.
+		 *
+		 * `modal` es la bandera de propiedad y es imprescindible: el menu movil
+		 * de Nav escribe `body.style.overflow` del MISMO body, asi que vaciarlo
+		 * al cerrar le quitaba su candado y el fondo volvia a scrollear con el
+		 * menu abierto. Aqui solo se escribe cuando este componente cambia de
+		 * estado, y se restaura el valor previo en lugar de vaciarlo.
+		 *
+		 * Se reevalua tambien al cruzar el breakpoint: girar el telefono con la
+		 * ventana abierta dejaba el fondo inerte y sin scroll mientras la ventana
+		 * se encogia a la esquina, o al contrario, sin modalidad cuando ya
+		 * cubria la pantalla. */
+		function aplicarModalidad() {
+			const debe = abierto && !escritorio.matches;
+			if (debe === modal) return;
+			modal = debe;
+			for (const el of document.body.children) {
+				if (el !== raiz) el.inert = debe;
+			}
+			/* Una clase propia en <body>, NO `body.style.overflow`: esa ranura la
+			 * escribe tambien el menu movil de Nav. Guardar su valor y restaurarlo
+			 * hacia que el asistente reescribiera un "hidden" ajeno al salir de
+			 * modalidad y dejara la pagina entera sin scroll con todo cerrado y sin
+			 * forma de recuperarla. Con una clase, los dos candados se suman y
+			 * ninguno pisa al otro: un estilo en linea de Nav gana mientras exista,
+			 * y al retirarlo manda la clase si el asistente sigue abierto. */
+			document.body.classList.toggle("as-bloqueado", debe);
+			if (debe && hayInert) ventana.setAttribute("aria-modal", "true");
+			else ventana.removeAttribute("aria-modal");
+			/* Al volverse modal el fondo pasa a inert: si el foco estaba ahi, el
+			 * navegador lo suelta a <body>, y entonces Escape —que decide con
+			 * e.target— ya no podia cerrar la ventana. Camino real: abrir en
+			 * escritorio, tocar la pagina detras y girar el telefono. */
+			if (debe && !ventana.contains(document.activeElement)) ventana.focus();
+		}
+
+		escritorio.addEventListener("change", aplicarModalidad);
+
+		function abrir() {
+			if (abierto) return;
+			/* Reabrir una conversacion ya enviada empieza una nueva, en lugar de
+			 * mostrar un final sin salida. */
+			if (i >= PASOS.length) reiniciar();
+			abierto = true;
+			raiz.classList.add("as-abierto");
+			burbuja.setAttribute("aria-expanded", "true");
+			aplicarModalidad();
+			log.scrollTop = log.scrollHeight;
+			/* Excluye lo deshabilitado: con un envio en vuelo el primer boton es
+			 * «Enviando…», su focus() no hace nada, y en movil el foco se quedaba
+			 * en la burbuja que esta misma funcion acaba de ocultar. */
+			(zona.querySelector(SEL_FOCO) || cerrarBtn).focus();
+			if (!ventana.contains(document.activeElement)) ventana.focus();
+		}
+
+		/* `desde` es el nodo desde el que se pidio cerrar. Se recibe como
+		 * argumento y no se lee de document.activeElement porque para cuando
+		 * corre este handler otro —el de Nav— pudo haber movido ya el foco. */
+		function cerrar(desde) {
+			if (!abierto) return;
+			/* Solo se recupera el foco si estaba dentro: devolverlo siempre lo
+			 * teletransportaba a la esquina desde donde estuviera el visitante. */
+			/* `desde` es una pista ADICIONAL, no la unica fuente: en Safari un clic
+			 * sobre un boton no le da el foco, asi que al pulsar la burbuja para
+			 * minimizar el foco seguia dentro de la ventana y se quedaba atrapado
+			 * en un subarbol que pasa a `visibility: hidden`. */
+			const dentro = ventana.contains(desde) || ventana.contains(document.activeElement);
+			abierto = false;
+			raiz.classList.remove("as-abierto");
+			burbuja.setAttribute("aria-expanded", "false");
+			aplicarModalidad();
+			if (dentro) burbuja.focus();
+		}
+
+		burbuja.addEventListener("click", () => (abierto ? cerrar(burbuja) : abrir()));
+		cerrarBtn.addEventListener("click", () => cerrar(cerrarBtn));
+
+		/* Escape solo actua si la pulsacion ocurrio DENTRO del asistente, y la
+		 * decision se toma con `e.target`, que queda fijado al despacharse el
+		 * evento. Leer document.activeElement no servia: el menu movil de Nav
+		 * tiene su propio keydown en document, corre antes, mueve el foco a su
+		 * boton y ninguno de los dos detiene la propagacion, de modo que cuando
+		 * llegaba este handler el foco ya estaba fuera y Escape no cerraba nunca
+		 * entre 640 y 767 px. */
+		document.addEventListener(
+			"keydown",
+			(e) => {
+				if (e.key !== "Escape" || !abierto) return;
+				if (!ventana.contains(e.target) && e.target !== burbuja) return;
+				/* En CAPTURA y deteniendo la propagacion: el keydown de Nav esta en
+				 * burbujeo y se registro antes, asi que sin esto un Escape dentro del
+				 * chat cerraba ademas su menu movil. */
+				e.stopPropagation();
+				cerrar(e.target);
+			},
+			true
+		);
+
+		/* Segundo punto de entrada: el boton de la seccion de contacto. Un solo
+		 * asistente, dos sitios desde donde abrirlo. */
+		document.addEventListener("click", (e) => {
+			if (e.target.closest("[data-asistente-abrir]")) abrir();
+		});
 
 		/* ---------- Catalogo del flujo ----------
 		 * `servicio` es el valor que valida el Worker. `refina` deja que una
@@ -264,6 +556,9 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 		let i = 0;
 		let interactuado = false;
 		let enviando = false;
+		/* Sube con cada cambio de paso. Un callback de `bot()` solo pinta si su
+		 * generacion sigue siendo la vigente. */
+		let gen = 0;
 
 		/* Cuantos mensajes habia en el log antes de pintar cada paso. Es lo que
 		 * permite que "Volver" deje el log exactamente como estaba: retirar un
@@ -273,7 +568,7 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 
 		/* ---------- Pintado ---------- */
 
-		function burbuja(texto, mia) {
+		function burbujaMsg(texto, mia) {
 			let p;
 			if (mia) {
 				p = nodo("mia");
@@ -286,13 +581,23 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 			log.scrollTop = log.scrollHeight;
 		}
 
-		/* Mensaje del asistente. Con movimiento reducido entra de golpe. */
+		/* Mensaje del asistente. Con movimiento reducido entra de golpe.
+		 *
+		 * El contador de generacion es lo que impide que un callback agendado
+		 * para un paso pinte sus controles cuando el paso ya cambio. Sin el,
+		 * pulsar «Volver» durante el retardo dejaba que el callback pendiente
+		 * pintara las opciones de la pregunta anterior encima del paso nuevo, y
+		 * al elegir una, `r.categoria` acababa con un valor que no es clave de
+		 * CATS: `pintarPaso` lanzaba TypeError y el asistente quedaba muerto
+		 * para el resto de la visita.
+		 */
 		function bot(texto, luego) {
 			if (sinMovimiento) {
-				burbuja(texto, false);
+				burbujaMsg(texto, false);
 				luego();
 				return;
 			}
+			const mia = gen;
 			const t = document.createElement("p");
 			t.className = claseBot;
 			t.setAttribute("aria-hidden", "true");
@@ -300,8 +605,9 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 			log.appendChild(t);
 			log.scrollTop = log.scrollHeight;
 			setTimeout(() => {
+				if (mia !== gen) return;
 				t.remove();
-				burbuja(texto, false);
+				burbujaMsg(texto, false);
 				luego();
 			}, 420);
 		}
@@ -314,16 +620,20 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 			volver.hidden = i === 0 || i > 7;
 		}
 
+		/* El paso final solo pinta un <a> y un <p>: con el selector limitado a
+		 * button/input no habia nada que enfocar y el foco se quedaba en <body>,
+		 * a un recorrido entero del sitio del boton de WhatsApp. El respaldo es
+		 * el mismo que ya usaba abrir(). */
 		function enfocar() {
-			if (!interactuado) return;
-			const primero = zona.querySelector("button, input");
-			if (primero) primero.focus();
+			if (!interactuado || !abierto) return;
+			(zona.querySelector(SEL_FOCO) || cerrarBtn).focus();
+			if (!ventana.contains(document.activeElement)) ventana.focus();
 		}
 
 		function opciones(lista) {
 			zona.textContent = "";
 			const grid = document.createElement("div");
-			grid.className = "grid grid-cols-1 gap-2 sm:grid-cols-2";
+			grid.className = "grid grid-cols-1 gap-2";
 			lista.forEach((op) => {
 				const b = document.createElement("button");
 				b.type = "button";
@@ -340,7 +650,7 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 			const [, etiqueta, marca, tipo, modo] = TEXTOS[paso];
 			zona.textContent = "";
 			const f = document.createElement("form");
-			f.className = "flex flex-col gap-2 sm:flex-row";
+			f.className = "flex flex-col gap-2";
 			f.noValidate = true;
 
 			const inp = nodo("input");
@@ -397,10 +707,32 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 		/* ---------- Pasos ---------- */
 
 		function pintarPaso() {
+			/* Invalida cualquier callback pendiente y retira los controles del
+			 * paso anterior: durante los 420 ms del tipeo seguian en el DOM,
+			 * activos y con el foco encima, y `responderOpcion` ya leia la `i`
+			 * avanzada. Un segundo toque —el visitante que se corrige— contestaba
+			 * la pregunta siguiente con una opcion de la lista anterior. */
+			gen += 1;
+			/* Vaciar la zona quita del DOM el control enfocado y el foco caia a
+			 * <body>: durante los 420 ms del tipeo Escape dejaba de cerrar y Tab
+			 * se salia del dialogo. Se reubica en la propia ventana, que es un
+			 * ancla no accionable (tabindex="-1"). */
+			if (zona.contains(document.activeElement)) ventana.focus();
+			zona.textContent = "";
 			progreso();
 			marcas[i] = log.childElementCount;
 			const paso = PASOS[i];
-			const cat = r.categoria ? CATS[r.categoria] : null;
+			const cat = CATS[r.categoria] || null;
+
+			/* Una categoria fuera de catalogo no se desreferencia nunca: se vuelve
+			 * al principio. Una sola recursion, porque al volver el paso ya es
+			 * "categoria" y la guarda no se cumple. */
+			if (!cat && paso !== "categoria") {
+				i = 0;
+				r.categoria = "";
+				pintarPaso();
+				return;
+			}
 
 			if (paso === "categoria") {
 				opciones(Object.keys(CATS));
@@ -424,7 +756,7 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 		function confirmar() {
 			zona.textContent = "";
 			const fila = document.createElement("div");
-			fila.className = "flex flex-col gap-2 sm:flex-row";
+			fila.className = "flex flex-col gap-2";
 
 			const enviar = nodo("primario");
 			enviar.id = "as-enviar";
@@ -445,6 +777,11 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 			enviando = true;
 			const btn = document.getElementById("as-enviar");
 			const err = zona.querySelector('[role="alert"]');
+			/* Desactivar el boton enfocado lo desenfoca, y el foco se quedaba en
+			 * <body> durante todo el fetch —segundos en red movil—, con Escape
+			 * muerto y el visitante de teclado aparcado al principio del
+			 * documento. */
+			if (zona.contains(document.activeElement)) ventana.focus();
 			btn.disabled = true;
 			btn.textContent = "Enviando…";
 
@@ -463,18 +800,34 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 				const res = await fetch("/api/contacto", { method: "POST", body: fd });
 				const data = await res.json();
 				if (!data.ok) throw new Error("rechazado");
-				cerrar();
+				cerrarFlujo();
 			} catch {
-				btn.disabled = false;
-				btn.textContent = "Reintentar";
-				err.textContent = "No se pudo enviar. Reintenta o escríbenos por WhatsApp.";
-				if (!zona.querySelector("a")) zona.firstElementChild.appendChild(botonWa("Enviar por WhatsApp"));
+				/* Si el visitante cambio de paso mientras el envio estaba en
+				 * vuelo, estos nodos ya no estan en el documento: escribir en
+				 * ellos no se veria, y `zona.firstElementChild` puede ser null
+				 * porque la zona se vacia al cambiar de paso. */
+				const caja = zona.firstElementChild;
+				if (caja && !zona.querySelector("a")) caja.appendChild(botonWa("Enviar por WhatsApp"));
+				if (err.isConnected) {
+					err.textContent = "No se pudo enviar. Reintenta o escríbenos por WhatsApp.";
+					/* En una ventana baja el pie es una ventanilla de pocos pixeles y el
+					 * aviso quedaba por debajo, sin nada que indicara que estaba ahi. */
+					err.scrollIntoView({ block: "nearest" });
+				}
+				if (btn.isConnected) {
+					btn.disabled = false;
+					btn.textContent = "Reintentar";
+					/* Solo se recupera el foco si no se lo habia llevado el visitante:
+					 * en escritorio la ventana no es modal y puede estar navegando la
+					 * pagina mientras el envio viaja. */
+					if (abierto && (ventana.contains(document.activeElement) || document.activeElement === document.body)) btn.focus();
+				}
 			} finally {
 				enviando = false;
 			}
 		}
 
-		function cerrar() {
+		function cerrarFlujo() {
 			i = PASOS.length;
 			progreso();
 			pasoTxt.textContent = "Listo";
@@ -482,7 +835,7 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 			bot(`Gracias, ${r.nombre}. Recibimos tu consulta y te contactamos por WhatsApp.`, () => {
 				zona.textContent = "";
 				const caja = document.createElement("div");
-				caja.className = "flex flex-col gap-2 sm:flex-row sm:items-center";
+				caja.className = "flex flex-col gap-2";
 				const nota = nodo("nota");
 				nota.textContent = "Si quieres adelantar, abre el chat con tu resumen ya escrito.";
 				caja.append(botonWa("Abrir WhatsApp con mi resumen"), nota);
@@ -492,24 +845,41 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 		}
 
 		function reiniciar() {
+			/* Con un envio en vuelo, reiniciar vaciaba `r` y la rama de error
+			 * acababa leyendo CATS[""]: TypeError y area de respuesta vacia. */
+			if (enviando) return;
 			i = 0;
 			PASOS.forEach((k) => { if (k in r) r[k] = ""; });
 			log.textContent = "";
-			burbuja("Empecemos otra vez. ¿Con qué te ayudamos?", false);
+			burbujaMsg("Empecemos otra vez. ¿Con qué te ayudamos?", false);
 			pintarPaso();
 		}
 
 		/* ---------- Respuestas ---------- */
 
 		function avanzar(valor) {
-			burbuja(valor, true);
+			burbujaMsg(valor, true);
 			i += 1;
 			pintarPaso();
 		}
 
+		/* Que opciones son legales en el paso actual. Comprobar pertenencia, y no
+		 * solo que el paso admita opciones, es lo que hace que un clic sobre un
+		 * control obsoleto no pueda corromper el lead: es un cinturon que no
+		 * depende de ninguna temporizacion. */
+		function legales(paso) {
+			if (paso === "categoria") return Object.keys(CATS);
+			if (paso === "urgencia") return Object.keys(URGENCIAS);
+			if (paso === "q1" || paso === "q2") {
+				const cat = CATS[r.categoria];
+				return cat ? cat[paso].ops : [];
+			}
+			return [];
+		}
+
 		function responderOpcion(valor) {
 			const paso = PASOS[i];
-			if (paso !== "categoria" && paso !== "q1" && paso !== "q2" && paso !== "urgencia") return;
+			if (!legales(paso).includes(valor)) return;
 			interactuado = true;
 			r[paso] = valor;
 			avanzar(valor);
@@ -527,6 +897,7 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 				const limpio = valor.replace(/[\s()-]/g, "").replace(/^\+?51/, "");
 				if (!/^9\d{8}$/.test(limpio)) {
 					err.textContent = "Necesito un celular peruano de 9 dígitos que empiece con 9.";
+					err.scrollIntoView({ block: "nearest" });
 					return;
 				}
 				r.whatsapp = limpio;
@@ -538,6 +909,7 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 			const min = paso === "nombre" ? 2 : 3;
 			if (valor.length < min || valor.length > max) {
 				err.textContent = `Escribe ${paso === "nombre" ? "tu nombre" : "el distrito"} (entre ${min} y ${max} caracteres).`;
+				err.scrollIntoView({ block: "nearest" });
 				return;
 			}
 			r[paso] = valor;
@@ -545,6 +917,9 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 		}
 
 		function atras() {
+			/* Mismo cinturon que reiniciar(): cambiar de paso con un envio en
+			 * vuelo desprende del DOM los nodos que la rama de error necesita. */
+			if (enviando) return;
 			if (i === 0) return;
 			i -= 1;
 			r[PASOS[i]] = "";
