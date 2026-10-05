@@ -68,12 +68,29 @@ const CATEGORIAS = [
 
 const anillo =
 	"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-darker";
-const claseOpcion = `rounded-lg border border-white/10 bg-dark px-4 py-2.5 text-left text-sm text-white transition-colors hover:border-primary hover:bg-white/5 ${anillo}`;
-const clasePrimario = `rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-darker transition-opacity hover:opacity-90 ${anillo}`;
-const claseSecundario = `rounded-lg border border-white/10 bg-dark px-5 py-2.5 text-sm text-white transition-colors hover:border-primary ${anillo}`;
-const claseBot = "max-w-[85%] rounded-lg rounded-tl-sm bg-dark px-4 py-3 text-sm leading-relaxed text-white";
-const claseMia = "ml-auto max-w-[85%] rounded-lg rounded-tr-sm bg-primary/15 px-4 py-2.5 text-sm leading-relaxed text-white";
-const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5 text-sm text-white placeholder:text-silver/50 ${anillo}`;
+/* Las opciones son pildoras que envuelven en filas, como las respuestas rapidas
+   de una app de mensajeria, y no botones de ancho completo apilados: las seis
+   categorias tienen que caber junto al saludo sin scroll al abrir. */
+/* `py-2` deja el chip en 36 px de alto. Con 32 px y 6 px entre filas, un dedo que
+   cae justo debajo de un chip selecciona el de la fila siguiente, y el automata
+   avanza de paso SIN confirmacion: eso graba una categoria equivocada en el lead,
+   que es la misma corrupcion que causaba la carrera de los 420 ms por otra via. */
+const claseOpcion = `inline-flex items-center rounded-full border border-white/15 bg-dark px-3 py-2 text-[13px] leading-snug text-white transition-colors hover:border-primary hover:bg-primary/10 ${anillo}`;
+/* Ejes separados: 6 px entre chips de la misma fila, 8 px entre filas. */
+const claseChips = "flex flex-wrap gap-x-1.5 gap-y-2";
+const clasePrimario = `rounded-full bg-primary px-4 py-1.5 text-[13px] font-semibold text-darker transition-opacity hover:opacity-90 ${anillo}`;
+const claseSecundario = `rounded-full border border-white/15 bg-dark px-4 py-1.5 text-[13px] text-white transition-colors hover:border-primary ${anillo}`;
+/* Burbujas de chat: esquinas asimetricas por el lado del hablante. */
+const claseFilaBot = "as-msg flex items-end gap-2";
+const claseAvatar = "mb-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary";
+const claseBot = "max-w-[calc(100%-2rem)] rounded-2xl rounded-bl-sm bg-dark px-3.5 py-2 text-sm leading-relaxed text-white";
+/* `w-fit` es lo que hace que la burbuja del visitante ABRACE su texto. Un <p> es
+   un bloque: con width auto rellena, y `max-w-[80%]` lo clava justo en el 80 %,
+   asi que un «Casa» salia como una barra cian de 280 px con la palabra pegada a
+   la izquierda. La del bot no tenia el problema porque es item flex de la fila
+   del avatar. */
+const claseMia = "as-msg ml-auto w-fit max-w-[80%] rounded-2xl rounded-br-sm bg-primary/20 px-3.5 py-2 text-sm leading-relaxed text-white";
+const claseInput = `w-full rounded-full border border-white/15 bg-dark px-4 py-2 text-sm text-white placeholder:text-silver/50 ${anillo}`;
 ---
 
 <noscript>
@@ -112,11 +129,11 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 	</button>
 
 	<div id="as-ventana" role="dialog" aria-labelledby="as-titulo" tabindex="-1" class="flex-col overflow-hidden rounded-xl border border-white/10 bg-darker shadow-2xl shadow-black/60">
-		<div class="flex shrink-0 items-start gap-3 border-b border-white/10 p-4">
-			<span aria-hidden="true" class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">T</span>
+		<div class="flex shrink-0 items-center gap-2.5 border-b border-white/10 px-3.5 py-2.5">
+			<span aria-hidden="true" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">T</span>
 			<div class="min-w-0 flex-1">
-				<p id="as-titulo" class="text-sm font-semibold text-white">Asistente TOGUCHI</p>
-				<p id="as-subtitulo" class="text-xs leading-relaxed text-silver">Te hago unas preguntas y derivo tu consulta al ingeniero. No manejo precios ni plazos.</p>
+				<p id="as-titulo" class="text-sm font-semibold leading-tight text-white">Asistente TOGUCHI</p>
+				<p id="as-subtitulo" class="truncate text-[11px] leading-tight text-silver">No manejo precios ni plazos</p>
 			</div>
 			<button
 				id="as-cerrar"
@@ -130,9 +147,9 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 			</button>
 		</div>
 
-		<div class="shrink-0 px-4 pt-3">
+		<div class="shrink-0 px-3.5 pt-2">
 			<div class="flex items-center justify-between gap-4">
-				<p id="as-paso" class="text-xs text-silver">Paso 1 de 7</p>
+				<p id="as-paso" class="text-[11px] text-silver">Paso 1 de 7</p>
 				<button
 					id="as-volver"
 					type="button"
@@ -147,29 +164,31 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 				aria-valuemin="0"
 				aria-valuemax="7"
 				aria-valuenow="1"
-				class="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/10"
+				class="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-white/10"
 			>
 				<div id="as-barra-fill" class="h-full rounded-full bg-primary transition-[width] duration-300" style="width: 14%"></div>
 			</div>
 		</div>
 
-		<div
-			id="as-log"
-			role="log"
-			aria-live="polite"
-			aria-relevant="additions"
-			class="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4"
-		>
-			<p class={claseBot}>Hola. Soy el asistente de TOGUCHI Ingeniería &amp; Servicios. ¿Con qué te ayudamos?</p>
-		</div>
+		{/* UN SOLO contenedor que scrollea. Los mensajes y las opciones viven
+		    dentro, como en una app de mensajeria; antes las opciones tenian su
+		    propio scroll y salian dos barras anidadas. El log sigue siendo el
+		    unico aria-live, para que pintar opciones no se anuncie. */}
+		<div id="as-hilo" class="min-h-0 flex-1 overflow-y-auto px-3.5 py-3">
+			<div id="as-log" role="log" aria-live="polite" aria-relevant="additions" class="space-y-2.5">
+				<div class={claseFilaBot}>
+					<span aria-hidden="true" class={claseAvatar}>T</span>
+					<p class={claseBot}>Hola. Soy el asistente de TOGUCHI Ingeniería &amp; Servicios. ¿Con qué te ayudamos?</p>
+				</div>
+			</div>
 
-		<div id="as-pie" class="border-t border-white/10 p-4">
-			<div id="as-respuesta">
-				<div class="grid grid-cols-1 gap-2">
+			<div id="as-respuesta" class="mt-3">
+				<div class={claseChips}>
 					{CATEGORIAS.map((c) => <button type="button" data-cat={c} class={claseOpcion}>{c}</button>)}
 				</div>
 			</div>
-			<p class="mt-3 text-xs leading-relaxed text-silver/70">
+
+			<p class="mt-3 text-[11px] leading-relaxed text-silver/70">
 				Usamos tus datos solo para responderte esta consulta.&nbsp;
 				<a href={WA_FALLBACK} target="_blank" rel="noopener" class="text-silver underline decoration-silver/40 underline-offset-2 hover:text-primary">Prefiero escribir por WhatsApp</a>
 			</p>
@@ -177,6 +196,10 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 
 		{/* Plantillas que el script clona. Asi cada cadena de Tailwind existe una sola vez. */}
 		<template id="as-tpl">
+			<div data-t="bot" class={claseFilaBot}>
+				<span aria-hidden="true" class={claseAvatar}>T</span>
+				<p class={claseBot}></p>
+			</div>
 			<p data-t="mia" class={claseMia}></p>
 			<input data-t="input" class={claseInput} autocomplete="off" />
 			<button data-t="primario" type="button" class={clasePrimario}></button>
@@ -232,26 +255,52 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 		transform: none;
 	}
 
-	/* El log nunca baja de este alto, y lo que sobra scrollea en lugar de
-	   recortarse: en un movil en horizontal el alto fijo de la cabecera mas las
-	   opciones supera el viewport. */
-	#as-log {
-		min-height: 3.5rem;
+	/* El hilo es el UNICO contenedor con scroll de la ventana. Antes el area de
+	   opciones tenia el suyo y salian dos barras anidadas; ademas, con el pie
+	   fijo, en una ventana baja su contenido se recortaba. Con un solo scroller
+	   todo es alcanzable con el mismo gesto y no hay nada que recortar. */
+	#as-hilo {
+		display: flex;
+		flex-direction: column;
 		overscroll-behavior: contain;
+		scrollbar-width: thin;
+		scrollbar-color: rgb(84 210 226 / 0.35) transparent;
 	}
 
-	/* `min-height: 0` es lo que permite que el pie CEDA. Con el `shrink-0` que
-	   tenia, su alto era min(contenido, 60%) y no bajaba de ahi: en un movil en
-	   horizontal —ventana de 278 px de alto— la suma de cabecera, progreso, el
-	   minimo del log y el pie superaba la ventana, y `overflow-hidden` recortaba
-	   la cola del pie, que no se alcanzaba en ninguna posicion de scroll. Ahi
-	   desaparecian la nota con el enlace de WhatsApp y, peor, el aviso de error
-	   del envio. Ahora el pie se encoge y hace su propio scroll. */
-	#as-pie {
-		min-height: 0;
-		max-height: 60%;
-		overflow-y: auto;
-		overscroll-behavior: contain;
+	/* Ancla la conversacion al fondo mientras sobra sitio, como una app de
+	   mensajeria, en lugar de dejarla pegada arriba con el hueco debajo. El
+	   margen automatico se resuelve a 0 en cuanto el contenido desborda, asi que
+	   el scroll sigue funcionando y no recorta por arriba —que es lo que pasa si
+	   se usa justify-content: flex-end en un contenedor que scrollea—. */
+	#as-log {
+		margin-top: auto;
+	}
+
+	#as-hilo::-webkit-scrollbar {
+		width: 6px;
+	}
+
+	#as-hilo::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	#as-hilo::-webkit-scrollbar-thumb {
+		background: rgb(84 210 226 / 0.35);
+		border-radius: 3px;
+	}
+
+	#as-hilo::-webkit-scrollbar-thumb:hover {
+		background: rgb(84 210 226 / 0.55);
+	}
+
+	/* Entrada de cada burbuja, breve y hacia arriba. */
+	@keyframes as-entra {
+		from { opacity: 0; transform: translateY(6px); }
+		to { opacity: 1; transform: none; }
+	}
+
+	.as-msg {
+		animation: as-entra 0.18s ease-out both;
 	}
 
 	/* Abierta, la ventana cubre la pantalla en movil: la burbuja se retira del
@@ -268,8 +317,14 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 			right: max(1.25rem, env(safe-area-inset-right));
 			bottom: calc(max(1.25rem, env(safe-area-inset-bottom)) + 4.25rem);
 			width: 380px;
-			/* dvh y no vh: en movil vh cuenta la barra del navegador. */
-			height: min(560px, calc(100dvh - 7rem));
+			/* dvh y no vh: en movil vh cuenta la barra del navegador.
+			   El tercer termino es el que GARANTIZA que la ventana cabe: con solo
+			   min(620px, 82dvh) y un desplazamiento inferior de 5,5rem, por debajo
+			   de unos 489 px de alto de viewport el borde superior caia en negativo
+			   y `overflow-hidden` recortaba la cabecera con el boton de cerrar
+			   dentro. Un telefono en horizontal entra por aqui, porque entra por
+			   ancho: a 390 px de alto se perdian 18 px. */
+			height: min(620px, 82dvh, calc(100dvh - 7rem));
 		}
 
 		#as-raiz.as-abierto #as-burbuja {
@@ -283,20 +338,17 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 		overflow: hidden;
 	}
 
-	/* Ventana muy baja —telefono en horizontal con la barra del navegador, o una
-	   ventana de escritorio diminuta—. Con el log clavado en 3,5rem, la suma de
-	   cabecera, progreso y log no cedia y el pie se quedaba en 0 px: no se veia
-	   NINGUN control, ni las opciones ni el enlace de salida. Aqui el log cede y
-	   el pie se queda con la mayor parte. */
+	/* Ventana muy baja: se recupera alto quitando el subtitulo y el bloque de
+	   progreso de la cabecera. Con un solo scroller ya no hay nada que se
+	   recorte, asi que esto es solo holgura. */
 	@media (max-height: 340px) {
-		#as-log { min-height: 0; }
-		#as-pie { max-height: 78%; }
 		#as-subtitulo { display: none; }
 	}
 
 	@media (prefers-reduced-motion: reduce) {
 		#as-ventana { transition: none; }
 		#as-barra-fill { transition: none; }
+		.as-msg { animation: none; }
 	}
 </style>
 
@@ -309,6 +361,7 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 		const ventana = document.getElementById("as-ventana");
 		const cerrarBtn = document.getElementById("as-cerrar");
 		const log = document.getElementById("as-log");
+		const hilo = document.getElementById("as-hilo");
 		const zona = document.getElementById("as-respuesta");
 		const pasoTxt = document.getElementById("as-paso");
 		const barra = document.getElementById("as-barra");
@@ -321,8 +374,17 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 
 		/* Clona una plantilla del servidor: una sola copia de cada clase. */
 		const nodo = (t) => tpl.querySelector(`[data-t="${t}"]`).cloneNode(true);
-		const claseBot = log.firstElementChild.className;
 		const claseOpcion = zona.querySelector("[data-cat]").className;
+		/* La misma cadena que pinto el servidor: una sola copia. */
+		const CHIPS = zona.firstElementChild.className;
+
+		/* El hilo es el UNICO contenedor con scroll, asi que llevarlo al fondo es
+		 * una sola funcion y se llama tras cada mensaje, cada tanda de opciones y
+		 * cada error: el visitante nunca deberia tener que scrollear para ver lo
+		 * ultimo. */
+		function alFondo() {
+			hilo.scrollTop = hilo.scrollHeight;
+		}
 
 		/* ---------- Abrir y cerrar ----------
 		 * Cerrar solo oculta: el DOM de la conversacion no se desmonta, asi que
@@ -391,7 +453,7 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 			raiz.classList.add("as-abierto");
 			burbuja.setAttribute("aria-expanded", "true");
 			aplicarModalidad();
-			log.scrollTop = log.scrollHeight;
+			alFondo();
 			/* Excluye lo deshabilitado: con un envio en vuelo el primer boton es
 			 * «Enviando…», su focus() no hace nada, y en movil el foco se quedaba
 			 * en la burbuja que esta misma funcion acaba de ocultar. */
@@ -569,16 +631,11 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 		/* ---------- Pintado ---------- */
 
 		function burbujaMsg(texto, mia) {
-			let p;
-			if (mia) {
-				p = nodo("mia");
-			} else {
-				p = document.createElement("p");
-				p.className = claseBot;
-			}
-			p.textContent = texto;
-			log.appendChild(p);
-			log.scrollTop = log.scrollHeight;
+			const n = nodo(mia ? "mia" : "bot");
+			/* La del bot es una fila con avatar; el texto va en su <p>. */
+			(mia ? n : n.querySelector("p")).textContent = texto;
+			log.appendChild(n);
+			alFondo();
 		}
 
 		/* Mensaje del asistente. Con movimiento reducido entra de golpe.
@@ -598,12 +655,11 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 				return;
 			}
 			const mia = gen;
-			const t = document.createElement("p");
-			t.className = claseBot;
+			const t = nodo("bot");
 			t.setAttribute("aria-hidden", "true");
-			t.textContent = "escribiendo…";
+			t.querySelector("p").textContent = "escribiendo…";
 			log.appendChild(t);
-			log.scrollTop = log.scrollHeight;
+			alFondo();
 			setTimeout(() => {
 				if (mia !== gen) return;
 				t.remove();
@@ -633,7 +689,7 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 		function opciones(lista) {
 			zona.textContent = "";
 			const grid = document.createElement("div");
-			grid.className = "grid grid-cols-1 gap-2";
+			grid.className = CHIPS;
 			lista.forEach((op) => {
 				const b = document.createElement("button");
 				b.type = "button";
@@ -643,6 +699,7 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 				grid.appendChild(b);
 			});
 			zona.appendChild(grid);
+			alFondo();
 			enfocar();
 		}
 
@@ -650,7 +707,9 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 			const [, etiqueta, marca, tipo, modo] = TEXTOS[paso];
 			zona.textContent = "";
 			const f = document.createElement("form");
-			f.className = "flex flex-col gap-2";
+			/* Campo y boton en la misma fila, como la barra de escribir de una app
+			 * de mensajeria. */
+			f.className = "flex items-center gap-1.5";
 			f.noValidate = true;
 
 			const inp = nodo("input");
@@ -662,6 +721,7 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 			const b = nodo("primario");
 			b.type = "submit";
 			b.textContent = "Continuar";
+			b.className += " shrink-0";
 
 			const err = nodo("error");
 			f.append(inp, b);
@@ -670,6 +730,7 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 				e.preventDefault();
 				responderTexto(inp.value.trim(), err);
 			});
+			alFondo();
 			enfocar();
 		}
 
@@ -745,7 +806,7 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 					const pre = nodo("resumen");
 					pre.textContent = `${resumenTexto()}\n\nNombre: ${r.nombre}\nWhatsApp: ${r.whatsapp}`;
 					log.appendChild(pre);
-					log.scrollTop = log.scrollHeight;
+					alFondo();
 					confirmar();
 				});
 			} else {
@@ -756,7 +817,7 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 		function confirmar() {
 			zona.textContent = "";
 			const fila = document.createElement("div");
-			fila.className = "flex flex-col gap-2";
+			fila.className = "flex flex-wrap items-center gap-1.5";
 
 			const enviar = nodo("primario");
 			enviar.id = "as-enviar";
@@ -769,6 +830,7 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 
 			fila.append(enviar, corregir);
 			zona.append(fila, nodo("error"));
+			alFondo();
 			enfocar();
 		}
 
@@ -835,11 +897,12 @@ const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5
 			bot(`Gracias, ${r.nombre}. Recibimos tu consulta y te contactamos por WhatsApp.`, () => {
 				zona.textContent = "";
 				const caja = document.createElement("div");
-				caja.className = "flex flex-col gap-2";
+				caja.className = "flex flex-wrap items-center gap-2";
 				const nota = nodo("nota");
 				nota.textContent = "Si quieres adelantar, abre el chat con tu resumen ya escrito.";
 				caja.append(botonWa("Abrir WhatsApp con mi resumen"), nota);
 				zona.appendChild(caja);
+				alFondo();
 				enfocar();
 			});
 		}
