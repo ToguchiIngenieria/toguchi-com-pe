@@ -4,7 +4,12 @@ const year = new Date().getFullYear();
 ---
 
 <footer class="border-t border-white/10 bg-darker">
-	<div class="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-center md:justify-between">
+	{/* `pb-24` reserva la franja que ocupa la pildora flotante del asistente,
+	    anclada abajo a la derecha. Con `py-10` la pildora tapaba la ultima linea
+	    de la columna derecha —el telefono de emergencias— y parte del copyright
+	    en un portatil de 1366x768 y, entera, a 1024 y 768. El boton redondo
+	    anterior, de 56 px, no llegaba a esa franja. */}
+	<div class="mx-auto flex max-w-6xl flex-col gap-6 px-4 pt-10 pb-24 sm:px-6 md:flex-row md:items-center md:justify-between">
 		<div class="flex flex-col gap-3">
 			<img src={logo.src} alt="" class="h-12 w-auto self-start" width="1920" height="448" />
 			<p class="text-sm text-silver">TOGUCHI INGENIERÍA Y SERVICIOS S.A.C. · RUC 20616012798</p>
