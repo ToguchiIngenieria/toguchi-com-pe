@@ -1,0 +1,567 @@
+---
+/**
+ * Asistente.astro — asistente de contacto GUIADO. Sin LLM.
+ *
+ * Reemplaza al formulario de la seccion de contacto. El flujo es un automata
+ * determinista por botones: no hay generacion de texto, no hay llamada a
+ * ningun modelo, y el asistente NUNCA entrega precios, plazos ni compromisos.
+ * Solo recoge datos y los deriva.
+ *
+ * Contrato con el backend — /api/contacto NO se toca:
+ * - Envia el MISMO FormData al MISMO endpoint que enviaba el formulario.
+ * - `servicio` y `urgencia` viajan con un valor de las listas cerradas que
+ *   el Worker valida (SERVICIOS y URGENCIAS en src/pages/api/contacto.ts).
+ *   Las etiquetas que ve el visitante se mapean a esos valores, y la etiqueta
+ *   literal se conserva dentro del resumen: no se pierde nada.
+ * - `empresa` y `direccion` van vacias: el asistente no las pregunta, y el
+ *   formulario anterior ya las aceptaba vacias.
+ * - `website` es el honeypot del formulario anterior, conservado.
+ * - No se recoge ningun dato que el formulario no recogiera ya.
+ *
+ * Accesibilidad:
+ * - Cada opcion es un <button> real: navegable por teclado sin JS extra.
+ * - El log de mensajes es aria-live; la burbuja de "escribiendo" queda
+ *   aria-hidden para que el lector de pantalla no la anuncie.
+ * - prefers-reduced-motion: sin animacion de tipeo y sin transiciones.
+ * - Sin JavaScript: el panel se oculta y queda el enlace de WhatsApp.
+ *
+ * Presupuesto de JS: las clases que el script necesita las LEE de los nodos
+ * que pinta el servidor, en vez de repetirlas. Asi hay una sola copia de cada
+ * cadena de Tailwind y las dos mitades no se pueden desincronizar.
+ */
+const WA_NUMERO = "51970130174";
+const WA_FALLBACK = `https://wa.me/${WA_NUMERO}?text=Hola%2C%20me%20interesa%20cotizar%20un%20proyecto`;
+
+const CATEGORIAS = [
+	"Instalaciones Eléctricas",
+	"Seguridad y Cámaras",
+	"Redes y Telecomunicaciones",
+	"Obras y Remodelación",
+	"Impresión 3D y Prototipos",
+	"Consultoría Técnica",
+];
+
+const anillo =
+	"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-darker";
+const claseOpcion = `rounded-lg border border-white/10 bg-dark px-4 py-2.5 text-left text-sm text-white transition-colors hover:border-primary hover:bg-white/5 ${anillo}`;
+const clasePrimario = `rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-darker transition-opacity hover:opacity-90 ${anillo}`;
+const claseSecundario = `rounded-lg border border-white/10 bg-dark px-5 py-2.5 text-sm text-white transition-colors hover:border-primary ${anillo}`;
+const claseBot = "max-w-[85%] rounded-lg rounded-tl-sm bg-dark px-4 py-3 text-sm leading-relaxed text-white";
+const claseMia = "ml-auto max-w-[85%] rounded-lg rounded-tr-sm bg-primary/15 px-4 py-2.5 text-sm leading-relaxed text-white";
+const claseInput = `w-full rounded-lg border border-white/10 bg-dark px-4 py-2.5 text-sm text-white placeholder:text-silver/50 ${anillo}`;
+---
+
+<div class="rounded-xl border border-white/10 bg-darker p-4 sm:p-6">
+	<noscript>
+		<style>#as-panel { display: none; }</style>
+		<p class="text-sm leading-relaxed text-silver">
+			El asistente necesita JavaScript.&nbsp;
+			<a href={WA_FALLBACK} target="_blank" rel="noopener" class="font-medium text-primary hover:underline">Escríbenos por WhatsApp</a>
+			&nbsp;y te atendemos igual.
+		</p>
+	</noscript>
+
+	<div id="as-panel" data-wa={WA_NUMERO}>
+		<div class="flex items-start gap-3 border-b border-white/10 pb-4">
+			<span aria-hidden="true" class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">T</span>
+			<div>
+				<p class="text-sm font-semibold text-white">Asistente TOGUCHI</p>
+				<p class="text-xs leading-relaxed text-silver">Te hago unas preguntas y derivo tu consulta al ingeniero. No manejo precios ni plazos.</p>
+			</div>
+		</div>
+
+		<div class="mt-4">
+			<div class="flex items-center justify-between gap-4">
+				<p id="as-paso" class="text-xs text-silver">Paso 1 de 7</p>
+				<button
+					id="as-volver"
+					type="button"
+					hidden
+					class={`rounded text-xs font-medium text-silver underline decoration-silver/40 underline-offset-4 transition-colors hover:text-primary ${anillo}`}
+				>Volver</button>
+			</div>
+			<div
+				id="as-barra"
+				role="progressbar"
+				aria-label="Avance del asistente"
+				aria-valuemin="0"
+				aria-valuemax="7"
+				aria-valuenow="1"
+				class="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/10"
+			>
+				<div id="as-barra-fill" class="h-full rounded-full bg-primary transition-[width] duration-300" style="width: 14%"></div>
+			</div>
+		</div>
+
+		<div
+			id="as-log"
+			role="log"
+			aria-live="polite"
+			aria-relevant="additions"
+			class="mt-5 max-h-[21rem] space-y-3 overflow-y-auto pr-1"
+		>
+			<p class={claseBot}>Hola. Soy el asistente de TOGUCHI Ingeniería &amp; Servicios. ¿Con qué te ayudamos?</p>
+		</div>
+
+		<div id="as-respuesta" class="mt-4">
+			<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+				{CATEGORIAS.map((c) => <button type="button" data-cat={c} class={claseOpcion}>{c}</button>)}
+			</div>
+		</div>
+
+		{/* Plantillas que el script clona. Asi cada cadena de Tailwind existe una sola vez. */}
+		<template id="as-tpl">
+			<p data-t="mia" class={claseMia}></p>
+			<input data-t="input" class={claseInput} autocomplete="off" />
+			<button data-t="primario" type="button" class={clasePrimario}></button>
+			<button data-t="secundario" type="button" class={claseSecundario}></button>
+			<p data-t="error" role="alert" class="mt-2 text-xs text-red-400"></p>
+			<p data-t="resumen" class="whitespace-pre-line rounded-lg border border-white/10 bg-dark px-4 py-3 text-sm leading-relaxed text-silver"></p>
+			<p data-t="nota" class="text-xs leading-relaxed text-silver"></p>
+		</template>
+
+		<input type="text" name="website" id="as-website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true" />
+
+		<p class="mt-4 text-xs leading-relaxed text-silver/70">
+			Usamos tus datos solo para responderte esta consulta.&nbsp;
+			<a href={WA_FALLBACK} target="_blank" rel="noopener" class="text-silver underline decoration-silver/40 underline-offset-2 hover:text-primary">Prefiero escribir por WhatsApp</a>
+		</p>
+	</div>
+</div>
+
+<style is:global>
+	@media (prefers-reduced-motion: reduce) {
+		#as-barra-fill { transition: none; }
+	}
+</style>
+
+<script>
+	const panel = document.getElementById("as-panel");
+
+	if (panel) {
+		const WA = panel.dataset.wa;
+		const log = document.getElementById("as-log");
+		const zona = document.getElementById("as-respuesta");
+		const pasoTxt = document.getElementById("as-paso");
+		const barra = document.getElementById("as-barra");
+		const relleno = document.getElementById("as-barra-fill");
+		const volver = document.getElementById("as-volver");
+		const honeypot = document.getElementById("as-website");
+		const tpl = document.getElementById("as-tpl").content;
+
+		const sinMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+		/* Clona una plantilla del servidor: una sola copia de cada clase. */
+		const nodo = (t) => tpl.querySelector(`[data-t="${t}"]`).cloneNode(true);
+		const claseBot = log.firstElementChild.className;
+		const claseOpcion = zona.querySelector("[data-cat]").className;
+
+		/* ---------- Catalogo del flujo ----------
+		 * `servicio` es el valor que valida el Worker. `refina` deja que una
+		 * respuesta concreta apunte a un bucket mas preciso del catalogo, que
+		 * tambien es un valor valido del Worker.
+		 */
+		const CATS = {
+			"Instalaciones Eléctricas": {
+				servicio: "Instalaciones eléctricas",
+				refina: { "Tablero eléctrico": "Tableros y control industrial" },
+				q1: {
+					texto: "¿Qué necesitas exactamente?",
+					campo: "Trabajo",
+					ops: ["Tablero eléctrico", "Recableado", "Pozo a tierra", "Alumbrado", "Otro / no estoy seguro"],
+				},
+				q2: {
+					texto: "¿En qué tipo de inmueble sería?",
+					campo: "Inmueble",
+					ops: ["Casa", "Local comercial", "Oficina", "Industria"],
+				},
+			},
+			"Seguridad y Cámaras": {
+				servicio: "CCTV y seguridad electrónica",
+				refina: { "Domótica": "Domótica e IoT" },
+				q1: {
+					texto: "¿Qué sistema te interesa?",
+					campo: "Sistema",
+					ops: ["CCTV / cámaras", "Alarma", "Control de acceso", "Domótica"],
+				},
+				q2: {
+					texto: "¿Cuántos puntos necesitas, aproximadamente?",
+					campo: "Puntos aprox.",
+					ops: ["1 a 4", "5 a 8", "9 a 16", "Más de 16", "No lo sé todavía"],
+				},
+			},
+			"Redes y Telecomunicaciones": {
+				servicio: "Redes y cableado estructurado",
+				q1: {
+					texto: "¿Qué trabajo necesitas?",
+					campo: "Trabajo",
+					ops: ["Cableado estructurado", "Fibra óptica", "Rack y gabinete", "Wifi / cobertura"],
+				},
+				q2: {
+					texto: "¿Cuántos puntos de red, aproximadamente?",
+					campo: "Puntos aprox.",
+					ops: ["1 a 4", "5 a 8", "9 a 16", "Más de 16", "No lo sé todavía"],
+				},
+			},
+			"Obras y Remodelación": {
+				servicio: "Remodelación y acondicionamiento",
+				q1: {
+					texto: "¿Qué tipo de trabajo es?",
+					campo: "Trabajo",
+					ops: ["Recuperación de espacios", "Pintura", "Drywall", "Acabados"],
+				},
+				q2: {
+					texto: "¿Qué área aproximada tiene?",
+					campo: "Área aprox.",
+					ops: ["Menos de 20 m²", "20 a 50 m²", "50 a 120 m²", "Más de 120 m²", "No lo sé todavía"],
+				},
+			},
+			"Impresión 3D y Prototipos": {
+				servicio: "Mecatrónica y prototipado",
+				q1: {
+					texto: "¿Qué necesitas fabricar?",
+					campo: "Encargo",
+					ops: ["Una pieza", "Un prototipo", "Escaneo 3D", "Serie corta"],
+				},
+				q2: {
+					texto: "¿Tienes el archivo 3D?",
+					campo: "Archivo 3D",
+					ops: ["Sí, tengo STL o STEP", "No, solo plano o foto", "No tengo nada aún"],
+				},
+			},
+			"Consultoría Técnica": {
+				servicio: "Consultoría e ingeniería técnica",
+				q1: {
+					texto: "¿Qué tipo de evaluación necesitas?",
+					campo: "Evaluación",
+					ops: ["Diagnóstico", "Mediciones", "Revisión de instalación"],
+				},
+				q2: {
+					texto: "¿Es para un trámite formal?",
+					campo: "Trámite formal",
+					ops: ["Sí", "No", "No estoy seguro"],
+				},
+			},
+		};
+
+		/* Las 4 etiquetas de urgencia se mapean a los 3 valores que acepta el
+		 * Worker. La etiqueta literal se conserva en el resumen. */
+		const URGENCIAS = {
+			"Es urgente": "Lo antes posible",
+			"Esta semana": "Lo antes posible",
+			"Este mes": "Dentro de este mes",
+			"Solo estoy cotizando": "Aún estoy cotizando",
+		};
+
+		const PASOS = ["categoria", "q1", "q2", "urgencia", "nombre", "whatsapp", "distrito", "resumen"];
+		const TEXTOS = {
+			nombre: ["¿Cuál es tu nombre?", "Tu nombre", "Nombre y apellido", "text", ""],
+			whatsapp: ["¿A qué número de WhatsApp te contactamos?", "Tu WhatsApp", "9XXXXXXXX", "tel", "numeric"],
+			distrito: ["¿En qué distrito es el trabajo?", "Tu distrito", "Distrito", "text", ""],
+		};
+
+		const r = { categoria: "", q1: "", q2: "", urgencia: "", nombre: "", whatsapp: "", distrito: "" };
+		let i = 0;
+		let interactuado = false;
+		let enviando = false;
+
+		/* Cuantos mensajes habia en el log antes de pintar cada paso. Es lo que
+		 * permite que "Volver" deje el log exactamente como estaba: retirar un
+		 * numero fijo de burbujas no sirve, porque cada paso añade una cantidad
+		 * distinta (el resumen añade tres y el primero, ninguna). */
+		const marcas = [];
+
+		/* ---------- Pintado ---------- */
+
+		function burbuja(texto, mia) {
+			let p;
+			if (mia) {
+				p = nodo("mia");
+			} else {
+				p = document.createElement("p");
+				p.className = claseBot;
+			}
+			p.textContent = texto;
+			log.appendChild(p);
+			log.scrollTop = log.scrollHeight;
+		}
+
+		/* Mensaje del asistente. Con movimiento reducido entra de golpe. */
+		function bot(texto, luego) {
+			if (sinMovimiento) {
+				burbuja(texto, false);
+				luego();
+				return;
+			}
+			const t = document.createElement("p");
+			t.className = claseBot;
+			t.setAttribute("aria-hidden", "true");
+			t.textContent = "escribiendo…";
+			log.appendChild(t);
+			log.scrollTop = log.scrollHeight;
+			setTimeout(() => {
+				t.remove();
+				burbuja(texto, false);
+				luego();
+			}, 420);
+		}
+
+		function progreso() {
+			const n = Math.min(i + 1, 7);
+			pasoTxt.textContent = `Paso ${n} de 7`;
+			barra.setAttribute("aria-valuenow", String(n));
+			relleno.style.width = `${Math.round((n / 7) * 100)}%`;
+			volver.hidden = i === 0 || i > 7;
+		}
+
+		function enfocar() {
+			if (!interactuado) return;
+			const primero = zona.querySelector("button, input");
+			if (primero) primero.focus();
+		}
+
+		function opciones(lista) {
+			zona.textContent = "";
+			const grid = document.createElement("div");
+			grid.className = "grid grid-cols-1 gap-2 sm:grid-cols-2";
+			lista.forEach((op) => {
+				const b = document.createElement("button");
+				b.type = "button";
+				b.textContent = op;
+				b.dataset.op = op;
+				b.className = claseOpcion;
+				grid.appendChild(b);
+			});
+			zona.appendChild(grid);
+			enfocar();
+		}
+
+		function campoTexto(paso) {
+			const [, etiqueta, marca, tipo, modo] = TEXTOS[paso];
+			zona.textContent = "";
+			const f = document.createElement("form");
+			f.className = "flex flex-col gap-2 sm:flex-row";
+			f.noValidate = true;
+
+			const inp = nodo("input");
+			inp.type = tipo;
+			inp.placeholder = marca;
+			if (modo) inp.inputMode = modo;
+			inp.setAttribute("aria-label", etiqueta);
+
+			const b = nodo("primario");
+			b.type = "submit";
+			b.textContent = "Continuar";
+
+			const err = nodo("error");
+			f.append(inp, b);
+			zona.append(f, err);
+			f.addEventListener("submit", (e) => {
+				e.preventDefault();
+				responderTexto(inp.value.trim(), err);
+			});
+			enfocar();
+		}
+
+		/* ---------- Resumen ---------- */
+
+		function resumenTexto() {
+			const cat = CATS[r.categoria];
+			return [
+				`Consulta por el asistente del sitio — ${r.categoria}`,
+				"",
+				`${cat.q1.campo}: ${r.q1}`,
+				`${cat.q2.campo}: ${r.q2}`,
+				`Urgencia indicada: ${r.urgencia}`,
+				`Distrito: ${r.distrito}`,
+				"",
+				"Recogido por el asistente guiado del sitio. No se entregaron precios ni plazos.",
+			].join("\n");
+		}
+
+		function servicioFinal() {
+			const cat = CATS[r.categoria];
+			return (cat.refina && cat.refina[r.q1]) || cat.servicio;
+		}
+
+		function botonWa(etiqueta) {
+			const a = document.createElement("a");
+			a.href = `https://wa.me/${WA}?text=${encodeURIComponent(`Hola, soy ${r.nombre}. ${resumenTexto()}`)}`;
+			a.target = "_blank";
+			a.rel = "noopener";
+			a.textContent = etiqueta;
+			a.className = nodo("primario").className;
+			return a;
+		}
+
+		/* ---------- Pasos ---------- */
+
+		function pintarPaso() {
+			progreso();
+			marcas[i] = log.childElementCount;
+			const paso = PASOS[i];
+			const cat = r.categoria ? CATS[r.categoria] : null;
+
+			if (paso === "categoria") {
+				opciones(Object.keys(CATS));
+			} else if (paso === "q1" || paso === "q2") {
+				bot(cat[paso].texto, () => opciones(cat[paso].ops));
+			} else if (paso === "urgencia") {
+				bot("¿Para cuándo lo necesitas?", () => opciones(Object.keys(URGENCIAS)));
+			} else if (paso === "resumen") {
+				bot("Esto es lo que voy a enviar al ingeniero:", () => {
+					const pre = nodo("resumen");
+					pre.textContent = `${resumenTexto()}\n\nNombre: ${r.nombre}\nWhatsApp: ${r.whatsapp}`;
+					log.appendChild(pre);
+					log.scrollTop = log.scrollHeight;
+					confirmar();
+				});
+			} else {
+				bot(TEXTOS[paso][0], () => campoTexto(paso));
+			}
+		}
+
+		function confirmar() {
+			zona.textContent = "";
+			const fila = document.createElement("div");
+			fila.className = "flex flex-col gap-2 sm:flex-row";
+
+			const enviar = nodo("primario");
+			enviar.id = "as-enviar";
+			enviar.textContent = "Enviar mi consulta";
+			enviar.addEventListener("click", enviarLead);
+
+			const corregir = nodo("secundario");
+			corregir.textContent = "Empezar de nuevo";
+			corregir.addEventListener("click", reiniciar);
+
+			fila.append(enviar, corregir);
+			zona.append(fila, nodo("error"));
+			enfocar();
+		}
+
+		async function enviarLead() {
+			if (enviando) return;
+			enviando = true;
+			const btn = document.getElementById("as-enviar");
+			const err = zona.querySelector('[role="alert"]');
+			btn.disabled = true;
+			btn.textContent = "Enviando…";
+
+			const fd = new FormData();
+			fd.append("nombre", r.nombre);
+			fd.append("empresa", "");
+			fd.append("whatsapp", r.whatsapp);
+			fd.append("servicio", servicioFinal());
+			fd.append("distrito", r.distrito);
+			fd.append("direccion", "");
+			fd.append("urgencia", URGENCIAS[r.urgencia]);
+			fd.append("mensaje", resumenTexto());
+			fd.append("website", honeypot.value);
+
+			try {
+				const res = await fetch("/api/contacto", { method: "POST", body: fd });
+				const data = await res.json();
+				if (!data.ok) throw new Error("rechazado");
+				cerrar();
+			} catch {
+				btn.disabled = false;
+				btn.textContent = "Reintentar";
+				err.textContent = "No se pudo enviar. Reintenta o escríbenos por WhatsApp.";
+				if (!zona.querySelector("a")) zona.firstElementChild.appendChild(botonWa("Enviar por WhatsApp"));
+			} finally {
+				enviando = false;
+			}
+		}
+
+		function cerrar() {
+			i = PASOS.length;
+			progreso();
+			pasoTxt.textContent = "Listo";
+			volver.hidden = true;
+			bot(`Gracias, ${r.nombre}. Recibimos tu consulta y te contactamos por WhatsApp.`, () => {
+				zona.textContent = "";
+				const caja = document.createElement("div");
+				caja.className = "flex flex-col gap-2 sm:flex-row sm:items-center";
+				const nota = nodo("nota");
+				nota.textContent = "Si quieres adelantar, abre el chat con tu resumen ya escrito.";
+				caja.append(botonWa("Abrir WhatsApp con mi resumen"), nota);
+				zona.appendChild(caja);
+				enfocar();
+			});
+		}
+
+		function reiniciar() {
+			i = 0;
+			PASOS.forEach((k) => { if (k in r) r[k] = ""; });
+			log.textContent = "";
+			burbuja("Empecemos otra vez. ¿Con qué te ayudamos?", false);
+			pintarPaso();
+		}
+
+		/* ---------- Respuestas ---------- */
+
+		function avanzar(valor) {
+			burbuja(valor, true);
+			i += 1;
+			pintarPaso();
+		}
+
+		function responderOpcion(valor) {
+			const paso = PASOS[i];
+			if (paso !== "categoria" && paso !== "q1" && paso !== "q2" && paso !== "urgencia") return;
+			interactuado = true;
+			r[paso] = valor;
+			avanzar(valor);
+		}
+
+		/* La validacion del cliente ayuda al visitante, no es frontera: el
+		 * Worker revalida todo lo que llega. */
+		function responderTexto(valor, err) {
+			const paso = PASOS[i];
+			if (!TEXTOS[paso]) return;
+			interactuado = true;
+			err.textContent = "";
+
+			if (paso === "whatsapp") {
+				const limpio = valor.replace(/[\s()-]/g, "").replace(/^\+?51/, "");
+				if (!/^9\d{8}$/.test(limpio)) {
+					err.textContent = "Necesito un celular peruano de 9 dígitos que empiece con 9.";
+					return;
+				}
+				r.whatsapp = limpio;
+				avanzar(limpio);
+				return;
+			}
+
+			const max = paso === "nombre" ? 100 : 60;
+			const min = paso === "nombre" ? 2 : 3;
+			if (valor.length < min || valor.length > max) {
+				err.textContent = `Escribe ${paso === "nombre" ? "tu nombre" : "el distrito"} (entre ${min} y ${max} caracteres).`;
+				return;
+			}
+			r[paso] = valor;
+			avanzar(valor);
+		}
+
+		function atras() {
+			if (i === 0) return;
+			i -= 1;
+			r[PASOS[i]] = "";
+			while (log.childElementCount > marcas[i] && log.lastElementChild) log.lastElementChild.remove();
+			interactuado = true;
+			pintarPaso();
+		}
+
+		/* Un solo listener delegado cubre todas las opciones, incluidas las
+		 * seis que ya vienen pintadas por el servidor. */
+		zona.addEventListener("click", (e) => {
+			const b = e.target.closest("button[data-cat], button[data-op]");
+			if (b) responderOpcion(b.dataset.cat || b.dataset.op);
+		});
+
+		volver.addEventListener("click", atras);
+		marcas[0] = log.childElementCount;
+		progreso();
+	}
+</script>
