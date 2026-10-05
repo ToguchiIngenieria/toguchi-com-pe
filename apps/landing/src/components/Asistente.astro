@@ -754,7 +754,22 @@ const claseInput = `w-full rounded-full border border-white/15 bg-dark px-4 py-2
 			enfocar();
 		}
 
-		/* ---------- Resumen ---------- */
+		/* ---------- Resumen ----------
+		 *
+		 * CUIDADO AL REDACTAR ESTE TEXTO: no es solo copy. Las dos lineas fijas de
+		 * abajo —la de apertura «Consulta por el asistente del sitio —» y la de
+		 * cierre «Recogido por el asistente guiado del sitio…»— las retira aguas
+		 * abajo la funcion `Sin-Plantilla` de `willis-lead.ps1`, la herramienta
+		 * interna que clasifica el lead contra el catalogo de servicios.
+		 *
+		 * El motivo: la palabra «asistente» esta en el vocabulario del tema de
+		 * domotica por los asistentes de voz, y al aparecer dos veces en cada
+		 * mensaje metia puntos falsos en TODOS los leads. Medido el 2026-10-05.
+		 *
+		 * Si se reescriben estas dos lineas, hay que ajustar alli los patrones.
+		 * `Sin-Plantilla` avisa cuando deja de calzar, pero el aviso solo lo ve
+		 * quien corre esa herramienta.
+		 */
 
 		function resumenTexto() {
 			const cat = CATS[r.categoria];
