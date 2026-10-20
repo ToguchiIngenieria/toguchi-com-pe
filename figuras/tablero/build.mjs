@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import * as k from "../../vendor/anatomy/kit/iso-kit.mjs";
 import { fillet } from "../../vendor/anatomy/kit/lathe.mjs";
 import { tubePieces, tubeSvg } from "../../vendor/anatomy/kit/tube.mjs";
+import * as A from "../../vendor/anatomy/kit/audit.mjs";
 import { kitScript } from "../../vendor/anatomy/scripts/inline-kit.mjs";
 import * as M from "./model.mjs";
 
@@ -43,7 +44,9 @@ const FRENTE_Z = CUERPO_Z + 8;
 const PEINE_Y = -32; // sobre los bornes superiores del riel 2
 const PEINE_Z = CUERPO_Z - 6;
 
-const BARRA = { tierra: 185, neutro: 215 };
+// El neutro va más cerca de los rieles y la tierra contra el borde: al revés,
+// la barra de tierra queda en medio del camino de todos los neutros.
+const BARRA = { neutro: 185, tierra: 215 };
 const BARRA_Z1 = 24;
 
 const TAPA_Z = 168; // levantada sobre el borde
@@ -60,6 +63,21 @@ const at = (point) => k.iso(point, P);
 const S = (paths, style) => k.solidSvg(paths, style);
 const L = (d, style) => k.lineSvg(d, style);
 const D = (points, style) => k.dotsSvg(points, style);
+
+// El registro de la auditoría. `slab` y `cyl` dibujan y registran del MISMO
+// parámetro: así la forma auditada es la dibujada y no una de relleno, que es
+// el error que el propio kit dice que la auditoría debe fallar.
+const R = A.recorder(P);
+
+function slab(plan, z, h, { tone, lit, crease, r = 2, bevel = 0.5, name, ground }) {
+	R.solid(A.slab(plan, z, h, { name: R.nameFor(name), ...(ground ? { ground: true } : {}) }));
+	return S(k.slabOf(plan, z, h, P, r, bevel), { tone, lit, crease });
+}
+
+function cyl(cx, cy, rad, z, h, { tone, crease, steps = 20, name }) {
+	R.solid(A.cylinder(cx, cy, rad, z, h, { name: R.nameFor(name) }));
+	return S(k.cylinder(cx, cy, rad, z, h, P, steps), { tone, crease });
+}
 
 const paredes = () => [
 	{ id: "y-", plan: { x: CAJA.x, y: CAJA.y, w: CAJA.w, d: PARED, r: 1 }, c: [0, CAJA.y] },
@@ -105,8 +123,8 @@ function fondo() {
 	const out = [`<path class="iso-halo" d="${k.haloOf(CAJA, 0, 6, P)}"/>`];
 	// ceja perimetral de empotrar
 	out.push(S(k.slabOf(k.insetPlan(CAJA, -10), 0, 4, P, 6, 0.8), { tone: "lo" }));
-	// chapa de fondo perforada
-	out.push(S(k.slabOf(k.insetPlan(CAJA, PARED), 0, FONDO_Z, P, 4, 0.5), { tone: "lo" }));
+	// chapa de fondo perforada: es el suelo de todo lo que va dentro
+	out.push(slab(k.insetPlan(CAJA, PARED), 0, FONDO_Z, { tone: "lo", r: 4, bevel: 0.5, name: "caja.fondo", ground: true }));
 	const tornillos = k.corners(k.insetPlan(CAJA, 18), 0);
 	out.push(L(tornillos.map(([x, y]) => k.ring(x, y, 3, FONDO_Z, P, 16)).join(""), { tone: "lo" }));
 	out.push(D(tornillos.map(([x, y]) => at([x, y, FONDO_Z])), { size: 0.5 }));
@@ -134,11 +152,11 @@ function rieles() {
 		const plan = { x: RIEL_X0, y: cy - RIEL_ANCHO / 2, w: M.RIEL.largo, d: RIEL_ANCHO, r: 0.5 };
 		// separadores
 		for (const x of [RIEL_X0 + 12, 0, RIEL_X0 + M.RIEL.largo - 12]) {
-			out.push(S(k.slabOf({ x: x - 7, y: cy - 9, w: 14, d: 18, r: 1 }, FONDO_Z, RIEL_Z0 - FONDO_Z, P, 2, 0.4), { tone: "lo" }));
+			out.push(slab({ x: x - 7, y: cy - 9, w: 14, d: 18, r: 1 }, FONDO_Z, RIEL_Z0 - FONDO_Z, { tone: "lo", r: 2, bevel: 0.4, name: `${id}.separador` }));
 			out.push(D([at([x, cy, RIEL_Z0])], { size: 0.45, tone: "lo" }));
 		}
 		// perfil omega: alma y dos alas
-		out.push(S(k.slabOf(plan, RIEL_Z0, RIEL_Z1 - RIEL_Z0, P, 1, 0.4), { tone: "mid" }));
+		out.push(slab(plan, RIEL_Z0, RIEL_Z1 - RIEL_Z0, { tone: "mid", r: 1, bevel: 0.4, name: `${id}.perfil` }));
 		out.push(L(k.planOutline(k.insetPlan(plan, 5), RIEL_Z1, P, 1), { tone: "faint" }));
 		// ranuras del riel, de ala a ala
 		const ranuras = [];
@@ -148,7 +166,7 @@ function rieles() {
 		out.push(L(ranuras.join(""), { tone: "lo" }));
 		if (id === "riel-3") {
 			// tapa ciega de reserva
-			out.push(S(k.slabOf({ x: RIEL_X0, y: cy - APARATO_D / 2, w: M.RIEL.largo, d: APARATO_D, r: 1 }, RIEL_Z1, 14, P, 2, 0.6), { tone: "lo" }));
+			out.push(slab({ x: RIEL_X0, y: cy - APARATO_D / 2, w: M.RIEL.largo, d: APARATO_D, r: 1 }, RIEL_Z1, 14, { tone: "lo", r: 2, bevel: 0.6, name: "riel-3.tapa-ciega" }));
 			out.push(L(k.planOutline(k.insetPlan({ x: RIEL_X0, y: cy - APARATO_D / 2, w: M.RIEL.largo, d: APARATO_D, r: 1 }, 6), RIEL_Z1 + 14, P, 2), { tone: "faint" }));
 		}
 	}
@@ -161,16 +179,16 @@ function barras() {
 		const plan = { x: RIEL_X0 + 6, y: cy - 7, w: M.RIEL.largo - 12, d: 14, r: 1 };
 		// soportes aislantes
 		for (const x of [plan.x + 8, plan.x + plan.w - 8]) {
-			out.push(S(k.cylinder(x, cy, 7, FONDO_Z, RIEL_Z0 - FONDO_Z, P, 20), { tone: "lo" }));
+			out.push(cyl(x, cy, 7, FONDO_Z, RIEL_Z0 - FONDO_Z, { tone: "lo", name: `barra-${nombre}.soporte` }));
 		}
-		out.push(S(k.slabOf(plan, RIEL_Z0, BARRA_Z1 - RIEL_Z0, P, 1, 0.4), { tone: "mid" }));
+		out.push(slab(plan, RIEL_Z0, BARRA_Z1 - RIEL_Z0, { tone: "mid", r: 1, bevel: 0.4, name: `barra-${nombre}.pletina` }));
 		// 12 bornes con su tornillo
 		const n = M.BARRAS[nombre].bornes;
 		const paso = (plan.w - 14) / (n - 1);
 		const bornes = [];
 		for (let i = 0; i < n; i++) {
 			const x = plan.x + 7 + i * paso;
-			out.push(S(k.slabOf({ x: x - 4, y: cy - 5, w: 8, d: 10, r: 0.6 }, BARRA_Z1, 7, P, 1, 0.3), { tone: "mid" }));
+			out.push(slab({ x: x - 4, y: cy - 5, w: 8, d: 10, r: 0.6 }, BARRA_Z1, 7, { tone: "mid", r: 1, bevel: 0.3, name: `barra-${nombre}.borne` }));
 			bornes.push(at([x, cy, BARRA_Z1 + 7]));
 		}
 		out.push(D(bornes, { size: 0.5, tone: "lo" }));
@@ -189,10 +207,10 @@ function aparatos(rielId) {
 		const tone = deriv ? "hi" : "mid";
 		const activo = a.id === ACTIVO; // el circuito encendido en reposo
 		out.push(`<g data-aparato="${a.id}">`);
-		out.push(S(k.slabOf(plan, RIEL_Z1, CUERPO_Z - RIEL_Z1, P, 1.5, 0.5), { tone, lit: activo }));
+		out.push(slab(plan, RIEL_Z1, CUERPO_Z - RIEL_Z1, { tone, lit: activo, r: 1.5, bevel: 0.5, name: `${a.id}.cuerpo` }));
 		// frente escalonado, más alto en el centro
 		const frente = { x: plan.x, y: cy - 11, w: plan.w, d: 22, r: 1 };
-		out.push(S(k.slabOf(frente, CUERPO_Z, FRENTE_Z - CUERPO_Z, P, 1, 0.4), { tone, lit: activo }));
+		out.push(slab(frente, CUERPO_Z, FRENTE_Z - CUERPO_Z, { tone, lit: activo, r: 1, bevel: 0.4, name: `${a.id}.frente` }));
 		// junta entre módulos de un cuerpo de 2 o 3: de canto a canto de la cara
 		for (let i = 1; i < a.mod; i++) {
 			const x = plan.x + i * M.RIEL.modulo - 0.6;
@@ -283,9 +301,10 @@ function canaleta() {
 	const out = [];
 	const pared = 3;
 	// dos paredes y el piso de la canaleta, no un bloque macizo
-	out.push(S(k.slabOf({ ...CANALETA, w: pared }, FONDO_Z, CANALETA_Z - FONDO_Z, P, 1, 0.4), { tone: "mid" }));
-	out.push(S(k.slabOf({ ...CANALETA, x: CANALETA.x + CANALETA.w - pared, w: pared }, FONDO_Z, CANALETA_Z - FONDO_Z, P, 1, 0.4), { tone: "mid" }));
-	out.push(S(k.slabOf(CANALETA, FONDO_Z, 2, P, 1, 0.3), { tone: "lo" }));
+	// el piso primero, y las paredes ENCIMA de él: no hundidas dentro
+	out.push(slab(CANALETA, FONDO_Z, 2, { tone: "lo", r: 1, bevel: 0.3, name: "canaleta.piso" }));
+	out.push(slab({ ...CANALETA, w: pared }, FONDO_Z + 2, CANALETA_Z - FONDO_Z - 2, { tone: "mid", r: 1, bevel: 0.4, name: "canaleta.pared-interior" }));
+	out.push(slab({ ...CANALETA, x: CANALETA.x + CANALETA.w - pared, w: pared }, FONDO_Z + 2, CANALETA_Z - FONDO_Z - 2, { tone: "mid", r: 1, bevel: 0.4, name: "canaleta.pared-exterior" }));
 	// ranuras de salida de la pared interior, por donde entran los cables
 	const ranuras = [];
 	for (let i = 0; i < 16; i++) {
@@ -306,18 +325,24 @@ function cables() {
 	const der = M.derivaciones();
 	const piezas = [];
 	const extremos = [];
-	const bocaX = CANALETA.x + 1.5;
+	const bocaX = CANALETA.x; // exactamente en la cara de la pared, no flotando dentro
 
 	der.forEach((d, i) => {
 		const x = RIEL_X0 + d.x + d.ancho / 2;
 		const yBorne = RIEL_Y["riel-2"] + APARATO_D / 2 - 5;
-		const yEntra = yBorne + 16 + i * 6; // escalonados: no se pisan en la boca
+		// El que está más a la izquierda baja más lejos: así su tramo horizontal
+		// pasa por debajo de las verticales de los demás y ninguno cruza a otro.
+		const yEntra = yBorne + 16 + (der.length - 1 - i) * 8;
 		const faseRuta = [
-			[x, yBorne, CUERPO_Z - 1],
+			[x, yBorne, CUERPO_Z], // sobre la cara del borne, no dentro del cuerpo
+			[x, yBorne, CUERPO_Z + 7], // sube recto: un extremo asentado sale perpendicular
+			[x, yBorne + 11, CUERPO_Z + 7], // cruza el canto del aparato por encima
 			[x, yEntra, CANALETA_Z - 4],
 			[bocaX, yEntra, CANALETA_Z - 8],
 		];
-		for (const pieza of tubePieces(fillet(faseRuta, 9, 7, { P, tube: CABLE_R }), CABLE_R, P, { maxLength: 12 })) {
+		const faseCurva = fillet(faseRuta, 9, 7, { P, tube: CABLE_R });
+		R.route(`cable.${d.id}.fase`, faseCurva, CABLE_R, { limp: true });
+		for (const pieza of tubePieces(faseCurva, CABLE_R, P, { maxLength: 12 })) {
 			piezas.push({ pieza, id: d.id, tipo: "fase" });
 		}
 		extremos.push({ at: at([x, yBorne, CUERPO_Z - 1]), id: d.id });
@@ -328,12 +353,18 @@ function cables() {
 		const paso = (plan.w - 14) / (M.BARRAS.neutro.bornes - 1);
 		const xb = plan.x + 7 + r.borneNeutro * paso;
 		const yb = BARRA.neutro;
+		// El corredor queda entre la tapa ciega del riel 3 (acaba en y=122) y la
+		// barra de neutro (empieza en y=178): ni encima de una ni de la otra.
+		const yNeutro = 130 + i * 7;
 		const neutroRuta = [
-			[xb, yb, BARRA_Z1 + 6],
-			[xb, yb - 12 - i * 4, CANALETA_Z - 6],
-			[bocaX, yb - 12 - i * 4, CANALETA_Z - 10],
+			[xb, yb, BARRA_Z1 + 7], // sobre la cara del borne
+			[xb, yb, BARRA_Z1 + 13], // sube recto antes de girar
+			[xb, yNeutro, CANALETA_Z - 6],
+			[bocaX, yNeutro, CANALETA_Z - 10],
 		];
-		for (const pieza of tubePieces(fillet(neutroRuta, 9, 7, { P, tube: CABLE_R }), CABLE_R, P, { maxLength: 12 })) {
+		const neutroCurva = fillet(neutroRuta, 9, 7, { P, tube: CABLE_R });
+		R.route(`cable.${d.id}.neutro`, neutroCurva, CABLE_R, { limp: true });
+		for (const pieza of tubePieces(neutroCurva, CABLE_R, P, { maxLength: 12 })) {
 			piezas.push({ pieza, id: d.id, tipo: "neutro" });
 		}
 		extremos.push({ at: at([xb, yb, BARRA_Z1 + 6]), id: d.id });
@@ -383,6 +414,9 @@ function tapa() {
 
 const { lejos, cerca } = paredesPorDepth();
 
+// Se dibuja UNA vez y se reusa en las dos salidas: llamarlo dos veces
+// registraría cada forma por duplicado y la auditoría se chocaría consigo misma.
+
 /** El dibujo, de atrás hacia adelante y de abajo hacia arriba. */
 const cuerpo = () => [
 	fondo(),
@@ -403,12 +437,14 @@ const cuerpo = () => [
 	CON_TAPA ? tapa() : "",
 ];
 
+const CUERPO = cuerpo();
+
 const svg = k.figureSvg({
 	width: WIDTH,
 	height: HEIGHT,
 	label:
 		"Un tablero de distribución trifásico visto desde arriba con la tapa levantada. Tres rieles DIN llevan la cabecera, seis derivaciones y un riel de reserva; un peine trifásico reparte las fases entre las derivaciones y dos barras de bornes recogen el neutro y la tierra.",
-	body: cuerpo(),
+	body: CUERPO,
 });
 
 const resumen = M.resumen();
@@ -500,8 +536,12 @@ const suelto = k.figureSvg({
 	height: HEIGHT,
 	label: "Tablero de distribución trifásico 380/220 V con la tapa levantada.",
 	standalone: theme,
-	body: cuerpo(),
+	body: CUERPO,
 });
 writeFileSync(join(HERE, `${nombre}.svg`), suelto);
 
 console.log("wrote", `${nombre}.html`, "+", `${nombre}.svg`);
+
+// `node build.mjs --audit` mide la geometría registrada: que ningún cable
+// atraviese nada, que cada extremo termine en algo y que nada flote.
+A.auditOrExit(R, P);

@@ -90,7 +90,48 @@ Conteo de sólidos. Las filas repetidas (tornillos, bornes) cuentan como una.
 
 **Total: 89 sólidos.**
 
-## El conteo no cabe en tramo Figure
+## Lo que encontró la auditoría, y por qué mejoró el dibujo
+
+`node build.mjs --audit` mide la geometría registrada: 12 tubos, 69 sólidos,
+8 segundos. La primera corrida dio **80 problemas**; la tercera, `audit passed`.
+
+Los cuatro defectos que encontró **no se veían en siete capturas seguidas**,
+miradas con atención:
+
+- las seis fases atravesaban **su propio interruptor** — arrancaban 1 mm bajo la
+  cara y el primer tramo salía por dentro del cuerpo;
+- los seis neutros atravesaban la **barra de tierra entera**, bornes incluidos;
+- los neutros se atravesaban **entre sí**: el que bajaba primero cruzaba la
+  vertical del siguiente;
+- un extremo asentado tiene que **salir perpendicular** de su mount: con 0,00 de
+  distancia al borne, el chequeo de terminales seguía fallando hasta que el
+  primer tramo fue vertical.
+
+Y lo que importa más que la lista: **el dibujo mejoró obedeciendo a la
+auditoría.** Los cables suben del borne, cruzan por encima del aparato y bajan a
+la canaleta porque la auditoría forzó cada uno de esos tres tramos — y resulta
+que es exactamente como se cablea un tablero de verdad. El instrumento no estaba
+peleándose con el dibujo: estaba empujándolo hacia el objeto real.
+
+Dos decisiones de montaje salieron de ahí y se quedan porque también son mejores
+en la realidad: la barra de **neutro** va contra los rieles y la de **tierra**
+contra el borde —al revés, la de tierra se cruza en el camino de los seis
+neutros—, y las paredes de la canaleta se apoyan **sobre** su piso en vez de
+hundirse en él.
+
+## El conteo, medido
+
+La lista de arriba cuenta 89 **piezas nombradas**, pero el renderer emite más,
+porque las filas (24 bornes, 9 separadores) se expanden. Medido sobre la salida:
+**~100 sólidos y 635 líneas**, contra los 53 sólidos y 470 paths del `test-rig`,
+que es la vara del skill. Sobran volúmenes y falta línea; por eso el trabajo
+pendiente es detalle, no más piezas.
+
+La tapa no se dibuja en reposo: las dos salidas quietas —el `.svg` de la web y
+el PNG de papel— necesitan ver el interior, así que levantarla al hover no
+mostraría nada que el reposo no muestre. `--tapa` la devuelve.
+
+## Nota histórica: el recorte que no hizo falta
 
 Figure son 40–80 piezas y esto son 89. No es inflado: son 11 aparatos reales,
 12 tramos de cable que el hover necesita uno por uno, y dos barras de bornes.
@@ -109,4 +150,11 @@ es lo que el hover explica, queda intacto.
 mitad del detalle a 4× — tornillos de cada aparato, rotulado de pletinas,
 peine con sus apoyos, bornes con su tornillo.
 
-Por defecto va **A**, que es lo que mantiene el tramo acordado.
+**Ninguna de las dos hizo falta.** Medido al escribir el cableado: los seis
+neutros como seis entidades son el mismo bucle sobre `M.derivaciones()` que ya
+dibuja las fases, mientras que el haz único cuesta **más** —cada neutro termina
+en su propio borne, así que un haz necesita el camino del haz *más* seis colas
+de abanico—. Y los 5 sólidos que el recorte ahorraba son el 5 % del dibujo.
+
+Cada tramo lleva `data-cable` y `data-tramo`, así que «haz» o «resaltables» es
+una regla CSS y no geometría: si mañana se quiere B, no hay nada que reescribir.
