@@ -218,17 +218,35 @@ function aparatos(rielId) {
 			out.push(L(k.lineOnTop([x, frente.y + frente.d], [x, plan.y + plan.d], CUERPO_Z, P), { tone: "faint" }));
 			out.push(L(k.lineOnTop([x, frente.y], [x, frente.y + frente.d], FRENTE_Z, P), { tone: "faint" }));
 		}
-		// ranuras de los bornes, arriba y abajo, con el tornillo de cada polo
-		for (const y of [plan.y + 5, plan.y + plan.d - 5]) {
-			out.push(L(k.lineOnTop([plan.x + 1.5, y], [plan.x + plan.w - 1.5, y], CUERPO_Z, P), { tone: "lo" }));
-			const tornillos = [];
-			for (let p = 0; p < a.polos && p < a.mod; p++) {
-				const x = plan.x + (p + 0.5) * (plan.w / Math.min(a.polos, a.mod));
-				tornillos.push(k.ring(x, y, 1.9, CUERPO_Z, P, 12));
+		// Cavidad de borne, no un anillo pintado sobre la cara: boca, paredes del
+		// rebaje y el tornillo en el fondo, que es lo que se ve al asomarse.
+		const polos = Math.min(a.polos, a.mod);
+		const FONDO_BORNE = CUERPO_Z - 3.4;
+		for (const y of [plan.y + 5.5, plan.y + plan.d - 5.5]) {
+			for (let p = 0; p < polos; p++) {
+				const x = plan.x + (p + 0.5) * (plan.w / polos);
+				const boca = { x: x - 4.2, y: y - 3.6, w: 8.4, d: 7.2, r: 1.2 };
+				out.push(L(k.planOutline(boca, CUERPO_Z, P, 2), { tone: "lo" }));
+				out.push(L(k.planOutline(k.insetPlan(boca, 0.9), FONDO_BORNE, P, 2), { tone: "faint" }));
+				// paredes del rebaje: las dos aristas que se ven de frente
+				out.push(L(k.rise([boca.x, boca.y + boca.d], FONDO_BORNE, CUERPO_Z, P), { tone: "faint" }));
+				out.push(L(k.rise([boca.x + boca.w, boca.y + boca.d], FONDO_BORNE, CUERPO_Z, P), { tone: "faint" }));
+				// el tornillo, en el fondo y con su ranura
+				out.push(L(k.ring(x, y, 2, FONDO_BORNE, P, 12), { tone: "lo" }));
+				out.push(L(k.lineOnTop([x - 1.4, y - 1.4], [x + 1.4, y + 1.4], FONDO_BORNE, P), { tone: "mid" }));
 			}
-			out.push(L(tornillos.join(""), { tone: "lo" }));
-			out.push(D(tornillos.map((_, p) => at([plan.x + (p + 0.5) * (plan.w / Math.min(a.polos, a.mod)), y, CUERPO_Z])), { size: 0.42, tone: "lo" }));
 		}
+		// Cara lateral expuesta: un nervio a lo largo y los dos remaches del
+		// cuerpo. Sin esto es una plancha blanca de 17 x 40 a 4 aumentos.
+		const yCara = plan.y + plan.d;
+		const zNervio = RIEL_Z1 + (CUERPO_Z - RIEL_Z1) * 0.62;
+		// El nervio muere en un remache a cada punta: la arista redondeada del
+		// cuerpo no siempre lleva trazo que reciba el extremo, y un nervio que
+		// termina en remache es además lo que lleva el aparato de verdad.
+		const nx0 = plan.x + 1;
+		const nx1 = plan.x + plan.w - 1;
+		out.push(L(k.segment([nx0, yCara, zNervio], [nx1, yCara, zNervio], P), { tone: "faint" }));
+		out.push(D([at([nx0, yCara, zNervio]), at([nx1, yCara, zNervio])], { size: 0.45, tone: "lo" }));
 		// El acento: el contorno del aparato encendido, en línea `lit`. El sólido
 		// con `lit` solo levanta el cuerpo un punto; el blanco es tono de línea.
 		if (deriv) {
@@ -243,8 +261,13 @@ function aparatos(rielId) {
 		}
 		// palanca
 		const px = plan.x + plan.w / 2;
+		// rebaje por donde asoma la palanca, y la palanca dentro de él
+		out.push(L(k.planOutline({ x: px - 4.4, y: cy - 6.5, w: 8.8, d: 13, r: 1.2 }, FRENTE_Z, P, 2), { tone: "lo" }));
 		out.push(S(k.slabOf({ x: px - 2.6, y: cy - 4, w: 5.2, d: 9, r: 1 }, FRENTE_Z, 6, P, 1, 0.3), { tone: "hi" }));
 		out.push(L(k.lineOnTop([px - 2, cy + 1], [px + 2, cy + 1], FRENTE_Z + 6, P), { tone: "mid" }));
+		// la marca de posición en el canto de la palanca y el eje a cada lado
+		out.push(L(k.segment([px - 2.6, cy - 4, FRENTE_Z + 3], [px + 2.6, cy - 4, FRENTE_Z + 3], P), { tone: "faint" }));
+		out.push(D([at([px - 2.6, cy + 4.5, FRENTE_Z + 2.5]), at([px + 2.6, cy + 4.5, FRENTE_Z + 2.5])], { size: 0.4, tone: "lo" }));
 		// botón de test en los diferenciales
 		if (a.tipo === "diferencial") {
 			out.push(S(k.cylinder(plan.x + plan.w - 6, cy + 14, 2.6, CUERPO_Z, 3, P, 16), { tone: "hi" }));
@@ -278,7 +301,7 @@ function peine() {
 		const y = plan.y + 2.5 + i * 3.2;
 		const viva = fase === faseActiva;
 		out.push(
-			`<path class="iso-line" data-pletina="${fase}" data-tone="${viva ? "lit" : "lo"}" style="stroke-width:${viva ? 1.1 : 0.7}" d="${k.lineOnTop([plan.x + 2, y], [plan.x + plan.w - 2, y], PEINE_Z + 9, P)}"/>`,
+			`<path class="iso-line" data-pletina="${fase}" data-tone="${viva ? "lit" : "lo"}" style="stroke-width:${viva ? 1.1 : 0.7}" d="${k.lineOnTop([plan.x, y], [plan.x + plan.w, y], PEINE_Z + 9, P)}"/>`,
 		);
 	});
 	// dientes: uno por derivación, bajando al borne
