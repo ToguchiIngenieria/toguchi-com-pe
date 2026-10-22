@@ -100,7 +100,30 @@ Para comparar, medido el 2026-10-14: el `index.html` de la landing pesa
 eso el destino de web es un `.svg` servido aparte con `<img loading="lazy">` y
 no SVG incrustado.
 
-## 6. El formulario de contacto acepta y no guarda
+## 6. El formulario de contacto — MEDICIÓN RETIRADA, era falsa
+
+> **Corregido el 2026-10-22.** Lo que sigue en esta sección es **incorrecto** y
+> se conserva porque el error importa más que el hallazgo. El formulario
+> **nunca estuvo roto**: la sonda estaba en producción todo el tiempo, en
+> `lead:2026-10-21T15:20:28.437Z:5551372e`, con su marca intacta.
+>
+> **La causa del error:** `wrangler kv key list` **sin `--remote` lee el
+> almacén local**, no producción, y no avisa. Medido: 11 claves en local, 10 en
+> remoto, conjuntos distintos, el local congelado el 2026-10-05. No era retardo
+> de propagación: eran dos almacenes. Mi línea base, mi conteo final y mis
+> consultas por prefijo interrogaron la copia local.
+>
+> **Lo que falló del método, y es lo citable:** tenía control positivo del
+> **manejador** —dos 400 con sus mensajes exactos— y **ninguno del
+> enumerador**. Que el endpoint valide no dice nada sobre si el instrumento que
+> lista sabe mirar donde hay que mirar. A un cero hay que darle su mitad
+> positiva *en el mismo instrumento*: preguntarle por algo que se sabe que
+> existe y comprobar que lo ve.
+>
+> **Consecuencia:** sobre esta conclusión falsa se desplegó a producción el
+> commit `17161f1`, que quitó del asistente una confirmación que era cierta.
+
+### Lo que se midió, incorrectamente (conservado)
 
 **Medido el 2026-10-21 contra producción.** Destino: KV `LEADS`,
 `62e3482416074ca7a6bfc770a39801e9`.
