@@ -152,10 +152,60 @@ dejó de prometer «Recibimos tu consulta y te contactamos» y pide mandar el
 resumen por WhatsApp, que es el canal que sí llega; la sección de contacto da
 peso de botón al enlace y muestra el número directo.
 
+## 6-bis. La latencia de Workers Builds no es una constante
+
+Medido dos veces, mismo instrumento (`wrangler deployments list`):
+
+| push a `main` | tardó |
+|---|---|
+| `21f5e84` (apagar observabilidad) | **46 s** |
+| `17161f1` (copy de contacto) | **150 s** |
+
+Tomé la primera por norma con **una sola muestra** y, cuando la segunda tardó
+más, concluí que el despliegue no había salido y estuve a punto de desplegar a
+mano desde la máquina, lo que habría creado una versión redundante fuera del
+pipeline. Todas mis comprobaciones cayeron dentro de la ventana.
+
+**Forma del fallo:** medir un proceso asíncrono con un reloj aprendido de una
+sola observación. Si hay que afirmar que algo no se desplegó, el criterio es el
+contenido servido con cache-buster **y** un margen varias veces mayor que la
+peor latencia observada, no la mejor.
+
 ## 7. Pendiente, dueño Katsumi
 
 El aviso de privacidad del sitio probablemente **no** cubría retención de IP ni
 geolocalización. No lo redacta esta sesión.
+
+---
+
+## Estado al cerrar la sesión
+
+**La figura** (`figuras/tablero/`). Tramo Figure. Las dos pruebas en cero:
+`audit passed` y `line ends: 0 of 506` en ambos temas, consola limpia. Hechas
+por orden acordado: tema oscuro, cables, detalle de aparatos. **Queda una sola
+cosa pendiente: las caras desnudas** — las dos paredes lejanas y la tapa ciega
+del riel 3 siguen siendo planchas lisas, y a 1× son el área vacía más grande
+del dibujo. El método acordado para ellas es el mismo que funcionó: mirar a 4×
+antes de añadir nada, y pasar `lines.mjs` al terminar.
+
+**Coste medido de la autoría**, en la unidad honesta: **9 ciclos de
+construir–capturar–mirar** sobre la figura, más 2 capturas de referencia del
+ejemplo `dial-indicator` para diagnosticar el tema oscuro, más **4 corridas de
+auditoría** y 3 del chequeo de líneas. El reloj de pared no sirve: la sesión se
+interrumpió muchas veces.
+
+**La rama** `figura/tablero-380v` está empujada y **va por detrás de `main`**:
+no lleva `17161f1`. Sí lleva el apagado de observabilidad, que era el riesgo
+real de un build de preview. Sincronizarla queda a decisión de Katsumi.
+
+**Decisiones abiertas, las dos tocan producción y no son mías:**
+
+1. Revertir `17161f1`, entero o solo la parte del asistente. Se desplegó sobre
+   una conclusión falsa (§6) y hoy producción no confirma una recepción que sí
+   ocurre. El número directo visible en la sección de contacto no depende de
+   esa premisa y puede quedarse si gusta.
+2. Borrar de KV la sonda `lead:2026-10-21T15:20:28.437Z:5551372e`, que es un
+   lead de prueba en el almacén real y ya entró en la carpeta de entrantes.
 
 ---
 
