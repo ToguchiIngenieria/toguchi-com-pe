@@ -929,13 +929,13 @@ const claseInput = `w-full rounded-full border border-white/15 bg-dark px-4 py-2
 			progreso();
 			pasoTxt.textContent = "Listo";
 			volver.hidden = true;
-			bot(`Gracias, ${r.nombre}. Mándanos el resumen por WhatsApp y te respondemos hoy mismo.`, () => {
+			bot(`Gracias, ${r.nombre}. Recibimos tu consulta y te contactamos por WhatsApp.`, () => {
 				zona.textContent = "";
 				const caja = document.createElement("div");
 				caja.className = "flex flex-wrap items-center gap-2";
 				const nota = nodo("nota");
-				nota.textContent = "Es la vía más rápida: el chat se abre con tu resumen ya escrito.";
-				caja.append(botonWa("Enviar por WhatsApp"), nota);
+				nota.textContent = "Si quieres adelantar, abre el chat con tu resumen ya escrito.";
+				caja.append(botonWa("Abrir WhatsApp con mi resumen"), nota);
 				zona.appendChild(caja);
 				alFondo();
 				enfocar();
